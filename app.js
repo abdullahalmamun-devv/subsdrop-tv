@@ -861,12 +861,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      playerContainer.requestFullscreen().catch(err => {
-        console.error(`Error entering fullscreen: ${err.message}`);
-      });
+    const isFullscreen = document.fullscreenElement || 
+                         document.webkitFullscreenElement || 
+                         document.mozFullScreenElement || 
+                         document.msFullscreenElement;
+
+    if (!isFullscreen) {
+      if (playerContainer.requestFullscreen) {
+        playerContainer.requestFullscreen().catch(err => {
+          console.error(`Error entering fullscreen: ${err.message}`);
+        });
+      } else if (playerContainer.webkitRequestFullscreen) {
+        playerContainer.webkitRequestFullscreen();
+      } else if (video.webkitEnterFullscreen) {
+        // Fallback for iOS (iPhone) Safari
+        video.webkitEnterFullscreen();
+      } else if (video.requestFullscreen) {
+        video.requestFullscreen();
+      }
     } else {
-      document.exitFullscreen();
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (video.webkitExitFullscreen) {
+        video.webkitExitFullscreen();
+      }
     }
   }
 
