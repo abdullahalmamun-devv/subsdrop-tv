@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadChannels();
     setupEventListeners();
     renderChannels();
+    initLiveStatsSSE();
     
     // Auto-select first channel
     if (channels.length > 0) {
@@ -144,6 +145,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.lucide) {
       window.lucide.createIcons();
     }
+  }
+
+  function initLiveStatsSSE() {
+    const liveViewersBadge = document.getElementById('live-viewers-badge');
+    const liveViewersCount = document.getElementById('live-viewers-count');
+    const statViewers = document.getElementById('stat-viewers');
+    const statStreams = document.getElementById('stat-streams');
+    
+    let eventSource = null;
+    let reconnectTimeout = null;
+
+    function connect() {
+      if (eventSource) {
+        eventSource.close();
+      }
+
+      eventSource = new EventSource('/api/live-stats');
+
+      eventSource.onopen = () => {
+        console.log('SSE connection to live stats established.');
+        clearTimeout(reconnectTimeout);
+      };
+
+      eventSource.onmessage = (e) => {
+        try {
+          const stats = JSON.parse(e.data);
+          
+          if (liveViewersCount) liveViewersCount.textContent = stats.viewers;
+          if (statViewers) statViewers.textContent = stats.viewers;
+          if (statStreams) statStreams.textContent = stats.activeTsStreams;
+
+          if (liveViewersBadge && stats.viewers > 0) {
+            liveViewersBadge.style.display = 'inline-flex';
+          }
+        } catch (err) {
+          console.error('Error parsing live stats data:', err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.warn('SSE connection lost. Reconnecting in 5 seconds...', err);
+        eventSource.close();
+        if (liveViewersBadge) {
+          liveViewersBadge.style.display = 'none';
+        }
+        
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = setTimeout(connect, 5000);
+      };
+    }
+
+    connect();
   }
 
   function loadSettings() {

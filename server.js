@@ -44,6 +44,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// Live Stats SSE endpoint
+app.get('/api/live-stats', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*'
+  });
+  
+  // Send initial ping to establish connection
+  res.write(':\n\n');
+
+  sseClients.push(res);
+  broadcastStats();
+
+  req.on('close', () => {
+    sseClients = sseClients.filter(c => c !== res);
+    broadcastStats();
+  });
+});
+
 // Proxy route
 app.get('/proxy', (req, res) => {
   const targetUrl = req.query.url;
@@ -250,6 +271,31 @@ let activeTsStream = null;
 let activeTsClients = [];
 let upstreamRequest = null;
 
+// Global state for SSE traffic tracking
+let sseClients = [];
+
+function broadcastStats() {
+  const stats = {
+    viewers: sseClients.length,
+    activeTsStreams: activeTsClients.length
+  };
+  const data = `data: ${JSON.stringify(stats)}\n\n`;
+  sseClients.forEach(client => {
+    if (client.writable && !client.destroyed) {
+      client.write(data);
+    }
+  });
+}
+
+// Heartbeat ping to keep SSE connections open and clean up stale ones
+setInterval(() => {
+  sseClients.forEach(client => {
+    if (client.writable && !client.destroyed) {
+      client.write(':\n\n'); // SSE comment ping
+    }
+  });
+}, 25000);
+
 function handleMulticastTsStream(req, res, targetUrl) {
   // Set headers for MPEG-TS streaming with keep-alive
   res.writeHead(200, {
@@ -286,10 +332,12 @@ function handleMulticastTsStream(req, res, targetUrl) {
   }
 
   activeTsClients.push(res);
+  broadcastStats();
 
   // Clean up when a client leaves
   req.on('close', () => {
     activeTsClients = activeTsClients.filter(c => c !== res);
+    broadcastStats();
     if (activeTsClients.length === 0) {
       cleanupUpstreamTsStream();
     }

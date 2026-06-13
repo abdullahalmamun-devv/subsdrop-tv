@@ -1371,6 +1371,32 @@ html, body {
   }
 }
 
+/* Live Viewers Badge Style */
+.live-viewers-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background-color: hsla(262, 83%, 58%, 0.1);
+  color: hsl(262, 83%, 75%);
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  border: 1px solid hsla(262, 83%, 58%, 0.25);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: default;
+  transition: all var(--transition-fast);
+}
+
+.live-viewers-badge:hover {
+  background-color: hsla(262, 83%, 58%, 0.15);
+  border-color: hsla(262, 83%, 58%, 0.4);
+}
+
+.live-viewers-badge svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* App Footer Styles */
 .app-footer {
   display: flex;

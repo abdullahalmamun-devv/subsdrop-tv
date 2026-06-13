@@ -45,6 +45,11 @@
           <span class="pulse-dot"></span>
           <span class="status-text">Online</span>
         </div>
+
+        <div class="live-viewers-badge" id="live-viewers-badge" style="display: none;" title="Active Live Viewers">
+          <i data-lucide="users"></i>
+          <span id="live-viewers-count">0</span>
+        </div>
         
         <button class="btn-icon" id="btn-open-settings" title="Settings">
           <i data-lucide="settings"></i>
@@ -207,6 +212,21 @@
       </div>
       
       <div class="settings-content">
+        <!-- Live Traffic Stats section -->
+        <div class="settings-section">
+          <h4>Live Traffic Stats</h4>
+          <div class="stats-container" style="display: flex; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;">
+            <div class="stat-card" style="flex: 1; min-width: 140px; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 10px; border: 1px solid var(--border-color); text-align: center; display: flex; flex-direction: column; gap: 0.35rem;">
+              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500;">Active Viewers</span>
+              <strong id="stat-viewers" style="font-size: 1.6rem; font-weight: 700; color: var(--primary);">0</strong>
+            </div>
+            <div class="stat-card" style="flex: 1; min-width: 140px; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 10px; border: 1px solid var(--border-color); text-align: center; display: flex; flex-direction: column; gap: 0.35rem;">
+              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500;">Server 1 Streamers</span>
+              <strong id="stat-streams" style="font-size: 1.6rem; font-weight: 700; color: var(--success);">0</strong>
+            </div>
+          </div>
+        </div>
+
         <!-- CORS section -->
         <div class="settings-section">
           <h4>CORS Proxy Settings</h4>
