@@ -3,9 +3,14 @@ const http = require('http');
 const https = require('https');
 const path = require('path');
 const fs = require('fs');
+const { PassThrough } = require('stream');
 
 const keepAliveAgentHttp = new http.Agent({ keepAlive: true, maxSockets: 150, keepAliveMsecs: 15000 });
 const keepAliveAgentHttps = new https.Agent({ keepAlive: true, maxSockets: 150, keepAliveMsecs: 15000 });
+
+// In-memory manifest cache to avoid duplicate upstream requests and rewriting overhead
+const manifestCache = new Map();
+const CACHE_TTL_MS = 1500; // 1.5 seconds TTL (suitable for live HLS streams)
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -46,6 +51,14 @@ app.get('/proxy', (req, res) => {
 
   if (!targetUrl) {
     return res.status(400).send('Missing "url" parameter');
+  }
+
+  // Serve manifest from cache if available and fresh
+  const cacheKey = `${targetUrl}_${smartMode}`;
+  const cached = manifestCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+    res.writeHead(200, cached.headers);
+    return res.end(cached.body);
   }
 
   let originalOrigin = '';
@@ -176,6 +189,13 @@ app.get('/proxy', (req, res) => {
               responseHeaders['content-type'] = 'application/vnd.apple.mpegurl; charset=utf-8';
               responseHeaders['content-length'] = rewrittenBuffer.length;
               
+              // Cache the rewritten manifest
+              manifestCache.set(cacheKey, {
+                timestamp: Date.now(),
+                headers: responseHeaders,
+                body: rewrittenBuffer
+              });
+              
               res.writeHead(200, responseHeaders);
               res.end(rewrittenBuffer);
             } catch (err) {
@@ -194,7 +214,9 @@ app.get('/proxy', (req, res) => {
             res.setHeader('X-Content-Type-Options', 'nosniff');
           }
           res.writeHead(200, responseHeaders);
-          proxyRes.pipe(res);
+          // Pipe using PassThrough chute with 512KB buffer to prevent backpressure stuttering
+          const bufferChute = new PassThrough({ highWaterMark: 512 * 1024 });
+          proxyRes.pipe(bufferChute).pipe(res);
         }
       });
 
