@@ -53,6 +53,12 @@ app.get('/proxy', (req, res) => {
     return res.status(400).send('Missing "url" parameter');
   }
 
+  // Multicast stream sharing ONLY for the Live TS stream URL
+  const isLiveTsChannel = targetUrl.toLowerCase().includes('130714.ts');
+  if (isLiveTsChannel) {
+    return handleMulticastTsStream(req, res, targetUrl);
+  }
+
   // Serve manifest from cache if available and fresh
   const cacheKey = `${targetUrl}_${smartMode}`;
   const cached = manifestCache.get(cacheKey);
@@ -238,6 +244,143 @@ app.get('/proxy', (req, res) => {
 
   makeRequest(targetUrl);
 });
+
+// Global state for multicast TS stream sharing
+let activeTsStream = null;
+let activeTsClients = [];
+let upstreamRequest = null;
+
+function handleMulticastTsStream(req, res, targetUrl) {
+  // Set headers for MPEG-TS streaming with keep-alive
+  res.writeHead(200, {
+    'Content-Type': 'video/mp2t',
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Connection': 'keep-alive',
+    'X-Content-Type-Options': 'nosniff'
+  });
+
+  if (!activeTsStream) {
+    activeTsClients = [];
+    // 15MB buffer limit allows users to lag behind by up to ~1 minute on slow connections without getting kicked out
+    activeTsStream = new PassThrough({ highWaterMark: 15 * 1024 * 1024 });
+    
+    // Listen to data events and write directly to each client to avoid backpressure block
+    activeTsStream.on('data', (chunk) => {
+      activeTsClients.forEach(client => {
+        if (client.writable && !client.destroyed) {
+          // If a client lags behind by more than 15MB (approx 1 minute of lag), disconnect them to protect RAM
+          if (client.writableLength > 15 * 1024 * 1024) {
+            console.warn('Client too slow, disconnecting to preserve server memory');
+            client.destroy();
+          } else {
+            client.write(chunk);
+          }
+        }
+      });
+    });
+
+    startUpstreamTsStream(targetUrl);
+  }
+
+  activeTsClients.push(res);
+
+  // Clean up when a client leaves
+  req.on('close', () => {
+    activeTsClients = activeTsClients.filter(c => c !== res);
+    if (activeTsClients.length === 0) {
+      cleanupUpstreamTsStream();
+    }
+  });
+}
+
+function startUpstreamTsStream(url) {
+  try {
+    const currentParsed = new URL(url);
+    const isHttps = currentParsed.protocol === 'https:';
+    const clientModule = isHttps ? https : http;
+
+    const forwardHeaders = {
+      'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+      'Accept': '*/*',
+      'Connection': 'keep-alive'
+    };
+
+    const proxyOptions = {
+      hostname: currentParsed.hostname,
+      port: currentParsed.port || (isHttps ? 443 : 80),
+      path: currentParsed.pathname + currentParsed.search,
+      method: 'GET',
+      headers: forwardHeaders,
+      timeout: 15000,
+      agent: isHttps ? keepAliveAgentHttps : keepAliveAgentHttp
+    };
+
+    upstreamRequest = clientModule.request(proxyOptions, (proxyRes) => {
+      upstreamRequest.setTimeout(0);
+      const statusCode = proxyRes.statusCode;
+
+      if ([301, 302, 303, 307, 308].includes(statusCode) && proxyRes.headers.location) {
+        let redirectUrl = proxyRes.headers.location;
+        if (!redirectUrl.startsWith('http')) {
+          redirectUrl = new URL(redirectUrl, url).href;
+        }
+        if (upstreamRequest) {
+          try { upstreamRequest.destroy(); } catch (e) {}
+        }
+        startUpstreamTsStream(redirectUrl);
+        return;
+      }
+
+      if (statusCode !== 200) {
+        broadcastError("Failed to fetch stream from source.");
+        cleanupUpstreamTsStream();
+        return;
+      }
+
+      proxyRes.pipe(activeTsStream);
+    });
+
+    upstreamRequest.on('timeout', () => {
+      broadcastError("Source stream connection timed out.");
+      cleanupUpstreamTsStream();
+    });
+
+    upstreamRequest.on('error', (err) => {
+      broadcastError(`Source stream connection error: ${err.message}`);
+      cleanupUpstreamTsStream();
+    });
+
+    upstreamRequest.end();
+  } catch (e) {
+    broadcastError("Failed to initiate source stream connection.");
+    cleanupUpstreamTsStream();
+  }
+}
+
+function broadcastError(msg) {
+  activeTsClients.forEach(client => {
+    if (client.writable && !client.destroyed) {
+      try {
+        client.write(Buffer.from(msg, 'utf8'));
+      } catch (e) {}
+    }
+  });
+}
+
+function cleanupUpstreamTsStream() {
+  if (upstreamRequest) {
+    try { upstreamRequest.destroy(); } catch (e) {}
+    upstreamRequest = null;
+  }
+  if (activeTsStream) {
+    try { activeTsStream.destroy(); } catch (e) {}
+    activeTsStream = null;
+  }
+  activeTsClients = [];
+}
 
 // Fallback for non-existent client-side paths
 app.use((req, res, next) => {
