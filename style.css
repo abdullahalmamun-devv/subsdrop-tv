@@ -1330,7 +1330,7 @@ html, body {
   }
 
   .channel-grid-container {
-    padding: 1rem;
+    padding: 1rem 1rem 4.5rem;
     overflow-y: visible;
     align-items: flex-start;
   }
@@ -1356,6 +1356,49 @@ html, body {
     flex-direction: column;
     gap: 0.5rem;
   }
+
+  .app-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 95;
+    background-color: var(--bg-sidebar);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
+    padding: 0.85rem;
+  }
+}
+
+/* App Footer Styles */
+.app-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: var(--bg-sidebar);
+  border-top: 1px solid var(--border-color);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.footer-dot {
+  opacity: 0.5;
+}
+
+.footer-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.footer-link:hover {
+  text-decoration: underline;
+  color: var(--primary-hover);
 }
 
 
