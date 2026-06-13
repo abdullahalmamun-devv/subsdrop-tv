@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const channelList = document.getElementById('channel-list');
   const emptyState = document.getElementById('empty-state');
   // Search elements removed per user request
-  const connectionStatus = document.getElementById('connection-status');
   
   // Header details
   const headerChannelName = document.getElementById('header-channel-name');
@@ -135,11 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (channels.length > 0) {
       selectChannel(channels[0].id);
     }
-    
-    // Detect internet connection status
-    window.addEventListener('online', updateConnectionStatus);
-    window.addEventListener('offline', updateConnectionStatus);
-    updateConnectionStatus();
 
     // Render Lucide icons
     if (window.lucide) {
@@ -249,16 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadChannels() {
     localStorage.removeItem('iptv_channels');
     channels = [...DEFAULT_CHANNELS];
-  }
-
-  function updateConnectionStatus() {
-    if (navigator.onLine) {
-      connectionStatus.className = 'connection-status online';
-      connectionStatus.querySelector('.status-text').textContent = 'Online';
-    } else {
-      connectionStatus.className = 'connection-status offline';
-      connectionStatus.querySelector('.status-text').textContent = 'Offline';
-    }
   }
 
   // --- UI Renderers ---
