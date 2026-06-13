@@ -472,11 +472,15 @@ document.addEventListener('DOMContentLoaded', () => {
       hlsInstance = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
-        maxBufferSize: 30 * 1024 * 1024, // 30MB buffer
-        maxBufferLength: 30, // 30 seconds max buffer
-        liveBackBufferLength: 15,
+        maxBufferSize: 60 * 1024 * 1024, // 60MB max buffer size
+        maxBufferLength: 45, // 45 seconds max buffer length
+        liveBackBufferLength: 20,
         manifestLoadingTimeOut: 15000,
-        levelLoadingTimeOut: 15000
+        manifestLoadingMaxRetry: 10,
+        levelLoadingTimeOut: 15000,
+        levelLoadingMaxRetry: 10,
+        fragLoadingTimeOut: 20000,
+        fragLoadingMaxRetry: 10
       });
       hlsInstance.loadSource(url);
       hlsInstance.attachMedia(video);
@@ -542,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, {
           enableWorker: true,
           enableStashBuffer: true,
-          stashInitialSize: 1024 * 1024, // Increase stash initial size to 1MB
+          stashInitialSize: 128 * 1024, // 128KB initial stash size for instant startup
           liveBufferLatencyChasing: false, // Disable chasing to prevent stuttering/buffer underruns
           lazyLoad: false,
           deferLoadAfterSourceOpen: false,

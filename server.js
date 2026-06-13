@@ -214,8 +214,8 @@ app.get('/proxy', (req, res) => {
             res.setHeader('X-Content-Type-Options', 'nosniff');
           }
           res.writeHead(200, responseHeaders);
-          // Pipe using PassThrough chute with 512KB buffer to prevent backpressure stuttering
-          const bufferChute = new PassThrough({ highWaterMark: 512 * 1024 });
+          // Pipe using PassThrough chute with 4MB buffer to pre-buffer video chunks on the server and absorb client network drops
+          const bufferChute = new PassThrough({ highWaterMark: 4 * 1024 * 1024 });
           proxyRes.pipe(bufferChute).pipe(res);
         }
       });
