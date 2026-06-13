@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SubsDrop TV - Super Fast & Lightweight Live Stream Player</title>
+  <meta name="description" content="A lightweight, ultra-fast, and premium IPTV player supporting HLS and MPEG-TS streams directly in the browser.">
+  
+  <!-- Premium Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css?v=5">
+
+  <!-- HLS.js for .m3u8 playback -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
+  
+  <!-- mpegts.js for .ts playback -->
+  <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@0.395.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Top header bar -->
+    <header class="top-bar">
+      <div class="logo">
+        <i data-lucide="tv" class="logo-icon"></i>
+        <span>SubsDrop<strong>TV</strong></span>
+      </div>
+
+      <div class="current-channel-info" id="current-channel-info">
+        <div class="channel-avatar" id="header-channel-avatar">S</div>
+        <div>
+          <h1 class="channel-title" id="header-channel-name">Select a channel</h1>
+          <span class="channel-status" id="header-channel-status">No stream active</span>
+        </div>
+      </div>
+
+      <div class="top-bar-actions">
+        <div class="connection-status online" id="connection-status">
+          <span class="pulse-dot"></span>
+          <span class="status-text">Online</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Panel (Player & Dashboard) -->
+    <main class="main-content">
+      <!-- Video Player Section -->
+      <div class="player-outer-wrapper">
+        <!-- Ambient Glow Backing -->
+        <div class="ambient-glow" id="ambient-glow"></div>
+
+        <div class="player-container" id="player-container">
+          <video id="video-element" playsinline></video>
+          
+          <!-- Loading Spinner -->
+          <div class="player-overlay loading-overlay" id="loading-overlay" style="display: none;">
+            <div class="spinner"></div>
+            <span>Loading stream...</span>
+          </div>
+
+          <!-- Big play/pause state indicator -->
+          <div class="player-overlay state-overlay" id="state-overlay" style="display: none;">
+            <i data-lucide="play" id="state-overlay-icon"></i>
+          </div>
+
+          <!-- Error Alert Overlay -->
+          <div class="player-overlay error-overlay" id="error-overlay" style="display: none;">
+            <div class="error-card">
+              <i data-lucide="alert-triangle" class="error-icon"></i>
+              <h3>Unable to Play Stream</h3>
+              <p id="error-message">The stream could not be loaded due to a network error or restricted access (CORS).</p>
+              <div class="error-actions">
+                <button class="btn btn-secondary" id="btn-retry-stream">
+                  <i data-lucide="refresh-cw" class="btn-icon-left"></i>Retry
+                </button>
+                <button class="btn btn-primary" id="btn-toggle-proxy-error">
+                  <i data-lucide="shield" class="btn-icon-left"></i>Enable Proxy
+                </button>
+                <button class="btn btn-secondary" id="btn-cors-troubleshoot" title="Troubleshoot CORS">
+                  <i data-lucide="help-circle"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom Video Controls Overlay -->
+          <div class="video-controls-overlay" id="video-controls-overlay">
+            <!-- Top bar details inside the video wrapper -->
+            <div class="controls-top-row">
+              <span class="badge badge-live" id="live-indicator">LIVE</span>
+              <span class="badge badge-resolution" id="resolution-indicator" style="display: none;">1080p</span>
+            </div>
+
+            <!-- Bottom controls panel -->
+            <div class="controls-bottom-panel">
+              <!-- Progress Bar -->
+              <div class="progress-bar-container" id="progress-bar-container">
+                <div class="progress-bar-rail"></div>
+                <div class="progress-bar-buffer" id="progress-buffer"></div>
+                <div class="progress-bar-fill" id="progress-fill"></div>
+                <div class="progress-bar-handle" id="progress-handle"></div>
+              </div>
+
+              <div class="controls-actions-row">
+                <!-- Left controls -->
+                <div class="controls-group">
+                  <button class="control-btn" id="ctrl-prev" title="Previous Channel (PageUp)">
+                    <i data-lucide="skip-back"></i>
+                  </button>
+                  <button class="control-btn play-btn" id="ctrl-play-pause" title="Play / Pause (Space)">
+                    <i data-lucide="play" id="ctrl-play-icon"></i>
+                  </button>
+                  <button class="control-btn" id="ctrl-next" title="Next Channel (PageDown)">
+                    <i data-lucide="skip-forward"></i>
+                  </button>
+                  
+                  <!-- Volume control group -->
+                  <div class="volume-control-group">
+                    <button class="control-btn" id="ctrl-mute" title="Mute / Unmute (M)">
+                      <i data-lucide="volume-2" id="ctrl-volume-icon"></i>
+                    </button>
+                    <div class="volume-slider-container">
+                      <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.8">
+                    </div>
+                  </div>
+
+                  <!-- Stream info inside controls -->
+                  <span class="time-display" id="time-display">00:00 / 00:00</span>
+                </div>
+
+                <!-- Right controls -->
+                <div class="controls-group">
+                  <!-- Quality settings button -->
+                  <button class="control-btn" id="ctrl-quality" title="Quality Settings" style="display: none;">
+                    <i data-lucide="sliders"></i>
+                  </button>
+                  
+                  <!-- Quality dropdown popover -->
+                  <div class="quality-popover" id="quality-popover" style="display: none;">
+                    <div class="popover-title">Stream Quality</div>
+                    <ul class="quality-list" id="quality-list">
+                      <!-- Populated dynamically -->
+                    </ul>
+                  </div>
+
+                  <button class="control-btn" id="ctrl-pip" title="Picture in Picture (P)">
+                    <i data-lucide="picture-in-picture-2"></i>
+                  </button>
+                  <button class="control-btn" id="ctrl-fullscreen" title="Fullscreen (F)">
+                    <i data-lucide="maximize" id="ctrl-fullscreen-icon"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Dashboard Panel (Channels, Search & Actions) -->
+      <section class="dashboard-bottom">
+        <div class="dashboard-controls-bar">
+          <!-- Search box -->
+          <div class="search-box">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search channels..." autocomplete="off">
+            <button class="clear-search-btn" id="clear-search-btn" style="display: none;">
+              <i data-lucide="x" class="small-icon"></i>
+            </button>
+          </div>
+          
+          <!-- Filter tabs -->
+          <div class="filter-tabs">
+            <button class="tab-btn active" data-tab="all">All Channels</button>
+            <button class="tab-btn" data-tab="favorites">
+              <i data-lucide="star" class="tab-icon"></i>Favorites
+            </button>
+            <button class="tab-btn" data-tab="custom">
+              <i data-lucide="plus-circle" class="tab-icon"></i>Customs
+            </button>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="dashboard-actions">
+            <button class="btn btn-primary" id="btn-open-add-channel">
+              <i data-lucide="plus" class="btn-icon-left"></i>Add Channel
+            </button>
+            <button class="btn-icon" id="btn-open-settings" title="Settings & CORS Proxy">
+              <i data-lucide="settings"></i>
+            </button>
+            <button class="btn-icon" id="btn-export-playlist" title="Export Channels">
+              <i data-lucide="download"></i>
+            </button>
+            <button class="btn-icon" id="btn-import-playlist-trigger" title="Import Channels">
+              <i data-lucide="upload"></i>
+            </button>
+            <input type="file" id="file-import-playlist" accept=".json,.m3u" style="display: none;">
+          </div>
+        </div>
+
+        <!-- Channel List Grid -->
+        <div class="channel-grid-container">
+          <ul class="channel-list" id="channel-list">
+            <!-- Populated by JavaScript -->
+          </ul>
+          <div class="empty-state" id="empty-state" style="display: none;">
+            <i data-lucide="search-code" class="empty-icon"></i>
+            <p>No channels found</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal: Add Channel -->
+  <div class="modal-backdrop" id="modal-add-channel" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Add Custom Channel</h3>
+        <button class="btn-icon modal-close-btn" data-close="modal-add-channel">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="add-channel-form">
+        <div class="form-group">
+          <label for="ch-name">Channel Name *</label>
+          <input type="text" id="ch-name" required placeholder="e.g., ESPN HD">
+        </div>
+        <div class="form-group">
+          <label for="ch-url">Stream URL (.m3u8 or .ts) *</label>
+          <input type="url" id="ch-url" required placeholder="e.g., https://example.com/live.m3u8">
+        </div>
+        <div class="form-group">
+          <label for="ch-category">Category</label>
+          <select id="ch-category">
+            <option value="Custom" selected>Custom</option>
+            <option value="Sports">Sports</option>
+            <option value="News">News</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Movies">Movies</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="ch-logo">Logo URL (Optional)</label>
+          <input type="url" id="ch-logo" placeholder="e.g., https://example.com/logo.png">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-add-channel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Channel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Settings & CORS Proxy -->
+  <div class="modal-backdrop" id="modal-settings" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>SubsDrop TV Settings</h3>
+        <button class="btn-icon modal-close-btn" data-close="modal-settings">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      
+      <div class="settings-content">
+        <!-- CORS section -->
+        <div class="settings-section">
+          <h4>CORS Proxy Settings</h4>
+          <p class="settings-desc">Many IPTV channels block web player requests due to browser security policies (CORS). Turning on a proxy routes stream files through a server that allows web player traffic.</p>
+          
+          <div class="form-group-checkbox">
+            <input type="checkbox" id="setting-use-proxy">
+            <label for="setting-use-proxy">Enable CORS Proxy for Streams</label>
+          </div>
+          
+          <div class="form-group" id="proxy-select-group" style="display: none;">
+            <label for="setting-proxy-select">Select CORS Proxy Server</label>
+            <select id="setting-proxy-select">
+              <option value="local">Built-in Server Proxy (Best, Auto-handles VLC UA)</option>
+              <option value="https://corsproxy.io/?url=">CORSProxy.io (Public)</option>
+              <option value="https://api.allorigins.win/raw?url=">AllOrigins (Public)</option>
+              <option value="custom">Custom Proxy...</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="proxy-url-group" style="display: none;">
+            <label for="setting-proxy-url">Custom Proxy URL Prefix</label>
+            <input type="text" id="setting-proxy-url" placeholder="e.g., https://corsproxy.io/?url=">
+            <span class="help-text">The stream URL will be appended to this address.</span>
+          </div>
+        </div>
+
+        <!-- Troubleshooting section -->
+        <div class="settings-section">
+          <h4>VLC vs Browser Stream Playback (Why streams fail)</h4>
+          <p class="settings-desc"><strong>VLC Player</strong> is a native app: it ignores browser security policies (CORS) and doesn't send browser headers. 
+          <strong>Browsers</strong> enforce security: they block requests unless the stream server allows web player traffic (CORS), and stream servers often block requests containing browser User-Agents, Origin, or Referer headers. Public CORS proxies often block infinite live video streams because they are too large.</p>
+          
+          <p class="settings-desc"><strong>How to play all streams in your browser:</strong></p>
+          <ul class="extension-list">
+            <li>
+              <strong>Step 1: Install & Enable a CORS Bypass Extension</strong>
+              <p class="settings-desc" style="margin: 0.25rem 0 0.5rem; font-size: 0.75rem;">This allows direct connections without using slow public proxies which block infinite live video streams.</p>
+              <div class="ext-links">
+                <a href="https://chromewebstore.google.com/detail/allow-cors-access-control/lhbopachgdgpinagbblockmjiogipbbf" target="_blank" rel="noopener">Chrome / Edge / Opera (Allow CORS)</a>
+                <a href="https://addons.mozilla.org/en-US/firefox/addon/access-control-allow-origin/" target="_blank" rel="noopener">Firefox (CORS Everywhere)</a>
+              </div>
+            </li>
+            <li>
+              <strong>Step 2: Strip Origin/Referer and Fake VLC User-Agent (For restricted streams)</strong>
+              <p class="settings-desc" style="margin: 0.25rem 0 0.5rem; font-size: 0.75rem;">Some stream servers block browser players. Install <strong>Header Editor</strong>, and create a rule to remove <code>Origin</code> and <code>Referer</code> headers, and set the <code>User-Agent</code> to <code>VLC/3.0.18</code> for your IPTV stream URLs.</p>
+              <div class="ext-links">
+                <a href="https://chromewebstore.google.com/detail/header-editor/eningnfbgjdgplenlcobjedecjocenjl" target="_blank" rel="noopener">Header Editor (Chrome)</a>
+                <a href="https://addons.mozilla.org/en-US/firefox/addon/header-editor/" target="_blank" rel="noopener">Header Editor (Firefox)</a>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Custom Playlist section -->
+        <div class="settings-section">
+          <h4>Reset & Data Management</h4>
+          <p class="settings-desc">Clear your custom channels and reload default settings.</p>
+          <button class="btn btn-danger" id="btn-reset-app">Reset App Settings & Custom Channels</button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-close="modal-settings">Close & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=5"></script>
+</body>
+</html>
