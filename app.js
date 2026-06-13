@@ -11,8 +11,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // 'all'   = Full proxy for CORS-restricted sources (server handles all traffic)
   const DEFAULT_CHANNELS = [
     {
-      id: 'live-ts-stream',
+      id: 'stream-akamai',
       name: 'Server 1',
+      url: 'https://premierleagpl23.akamaized.net/hls/live/2107108/tapmad-P2s6L_FiN@L-UrU/level_0.m3u8',
+      category: 'HLS',
+      logo: '',
+      isCustom: false,
+      isFavorite: false,
+      proxyMode: 'smart' // Akamai HLS stream
+    },
+    {
+      id: 'live-ts-stream',
+      name: 'Server 2',
       url: 'http://rgkkw.live:80/live/1Aoen7elp5/IgMJ60tmAa/130714.ts',
       category: 'TS',
       logo: '',
@@ -22,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     {
       id: 'stream-23',
-      name: 'Server 2',
+      name: 'Server 3',
       url: 'https://1nyaler.streamhostingcdn.top/stream/23/index.m3u8',
       category: 'HLS',
       logo: '',
@@ -32,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     {
       id: 'stream-32',
-      name: 'Server 3',
+      name: 'Server 4',
       url: 'https://1nyaler.streamhostingcdn.top/stream/32/index.m3u8',
       category: 'HLS',
       logo: '',
