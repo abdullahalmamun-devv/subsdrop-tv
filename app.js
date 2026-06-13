@@ -120,6 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnRetryStream = document.getElementById('btn-retry-stream');
   const btnCorsTroubleshoot = document.getElementById('btn-cors-troubleshoot');
   const btnToggleProxyError = document.getElementById('btn-toggle-proxy-error');
+  const btnOptionsDropdown = document.getElementById('btn-options-dropdown');
+  const optionsDropdownMenu = document.getElementById('options-dropdown-menu');
   
   // Settings Inputs
   const settingUseProxy = document.getElementById('setting-use-proxy');
@@ -1143,6 +1145,29 @@ document.addEventListener('DOMContentLoaded', () => {
         renderChannels();
       });
     });
+
+    // Options Dropdown Toggle Events
+    if (btnOptionsDropdown && optionsDropdownMenu) {
+      btnOptionsDropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = optionsDropdownMenu.style.display === 'flex';
+        optionsDropdownMenu.style.display = isOpen ? 'none' : 'flex';
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!optionsDropdownMenu.contains(e.target) && e.target !== btnOptionsDropdown && !btnOptionsDropdown.contains(e.target)) {
+          optionsDropdownMenu.style.display = 'none';
+        }
+      });
+
+      // Close dropdown when clicking any item inside it
+      optionsDropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', () => {
+          optionsDropdownMenu.style.display = 'none';
+        });
+      });
+    }
 
     // Modals Open/Close Events
     btnOpenAddChannel.addEventListener('click', () => {

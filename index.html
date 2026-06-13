@@ -186,20 +186,25 @@
             </button>
           </div>
 
-          <!-- Quick Actions -->
-          <div class="dashboard-actions">
-            <button class="btn btn-primary" id="btn-open-add-channel">
-              <i data-lucide="plus" class="btn-icon-left"></i>Add Channel
+          <!-- Options Dropdown -->
+          <div class="options-dropdown-container">
+            <button class="btn-icon" id="btn-options-dropdown" title="More Options">
+              <i data-lucide="more-vertical"></i>
             </button>
-            <button class="btn-icon" id="btn-open-settings" title="Settings & CORS Proxy">
-              <i data-lucide="settings"></i>
-            </button>
-            <button class="btn-icon" id="btn-export-playlist" title="Export Channels">
-              <i data-lucide="download"></i>
-            </button>
-            <button class="btn-icon" id="btn-import-playlist-trigger" title="Import Channels">
-              <i data-lucide="upload"></i>
-            </button>
+            <div class="options-dropdown-menu" id="options-dropdown-menu" style="display: none;">
+              <button class="dropdown-item" id="btn-open-add-channel">
+                <i data-lucide="plus"></i>Add Channel
+              </button>
+              <button class="dropdown-item" id="btn-open-settings">
+                <i data-lucide="settings"></i>Settings
+              </button>
+              <button class="dropdown-item" id="btn-import-playlist-trigger">
+                <i data-lucide="upload"></i>Import M3U / JSON
+              </button>
+              <button class="dropdown-item" id="btn-export-playlist">
+                <i data-lucide="download"></i>Export Playlist
+              </button>
+            </div>
             <input type="file" id="file-import-playlist" accept=".json,.m3u" style="display: none;">
           </div>
         </div>
