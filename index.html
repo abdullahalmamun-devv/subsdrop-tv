@@ -184,6 +184,11 @@
             <p>No channels found</p>
           </div>
         </div>
+        <footer class="app-footer">
+          <span>© 2026 SubsDrop TV. All rights reserved.</span>
+          <span class="footer-dot">•</span>
+          <a href="#" id="btn-open-disclaimer" class="footer-link">Disclaimer & Privacy Policy</a>
+        </footer>
       </section>
     </main>
   </div>
@@ -266,6 +271,38 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" data-close="modal-settings">Close & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Disclaimer & Privacy Policy -->
+  <div class="modal-backdrop" id="modal-disclaimer" style="display: none;">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>Disclaimer & Privacy Policy</h3>
+        <button class="btn-icon modal-close-btn" data-close="modal-disclaimer">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      
+      <div class="settings-content" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+        <div style="line-height: 1.6; font-size: 0.9rem; color: var(--text-muted);">
+          <h4 style="color: var(--text-main); margin-bottom: 0.5rem; font-weight: 600;">Content Disclaimer</h4>
+          <p style="margin-bottom: 1rem;">SubsDrop TV does not host, stream, store, or redistribute any media content. The streams available on this platform are third-party links publicly accessible on the internet. SubsDrop TV has no control over these external links or their contents.</p>
+          
+          <h4 style="color: var(--text-main); margin-bottom: 0.5rem; font-weight: 600;">Take-Down Policy (DMCA)</h4>
+          <p style="margin-bottom: 1rem;">We respect intellectual property rights. If you are a copyright owner and want any stream link removed from our player, please contact us. The content owners or relevant authorities can request take-downs at any time, and we will act swiftly to remove them.</p>
+
+          <h4 style="color: var(--text-main); margin-bottom: 0.5rem; font-weight: 600;">Contact Us for Copyrights & Inquiries</h4>
+          <p style="margin-bottom: 0.5rem;">For copyright claims, take-down requests, or any other support inquiries, please email us directly at:</p>
+          <a href="mailto:support@subsdrop.com" style="color: var(--primary); font-weight: 600; text-decoration: none; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="mail" style="width: 16px; height: 16px;"></i> support@subsdrop.com
+          </a>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-close="modal-disclaimer">I Understand</button>
       </div>
     </div>
   </div>

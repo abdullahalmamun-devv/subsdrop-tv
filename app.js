@@ -113,6 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnRetryStream = document.getElementById('btn-retry-stream');
   const btnCorsTroubleshoot = document.getElementById('btn-cors-troubleshoot');
   const btnToggleProxyError = document.getElementById('btn-toggle-proxy-error');
+  const modalDisclaimer = document.getElementById('modal-disclaimer');
+  const btnOpenDisclaimer = document.getElementById('btn-open-disclaimer');
   
   // Settings Inputs
   const settingUseProxy = document.getElementById('setting-use-proxy');
@@ -988,6 +990,14 @@ document.addEventListener('DOMContentLoaded', () => {
     btnOpenSettings.addEventListener('click', () => {
       modalSettings.style.display = 'flex';
     });
+
+    // Disclaimer Modal Trigger
+    if (btnOpenDisclaimer && modalDisclaimer) {
+      btnOpenDisclaimer.addEventListener('click', (e) => {
+        e.preventDefault();
+        modalDisclaimer.style.display = 'flex';
+      });
+    }
     
     document.querySelectorAll('.modal-close-btn, [data-close]').forEach(btn => {
       btn.addEventListener('click', (e) => {
