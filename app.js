@@ -31,8 +31,18 @@ document.addEventListener('DOMContentLoaded', () => {
       proxyMode: 'all' // TS redirect chain requires full proxy
     },
     {
-      id: 'stream-23',
+      id: 'toffee-live-stream',
       name: 'Server 3',
+      url: 'https://toffee-seg.smartdev.workers.dev/manifest?url=https%3A%2F%2Fprod-cdn01-live.toffeelive.com%2Flive%2FFIFA-2026%2F0%2Fmaster_1500.m3u8&cookie=%22Expires%3D1781468714~_GO%3DGenerated~URLPrefix%3DaHR0cHM6Ly9wcm9kLWNkbjAxLWxpdmUudG9mZmVlbGl2ZS5jb20~Signature%3DAaPNU3dEh2oiK4WNt5yscNtsmeh4d5bpqsa6qm_1CDbvhxU0quS6r700yd55OwDEXtm3Ia-CqHnDOEYjcDlH8WqoKMMI%22',
+      category: 'HLS',
+      logo: '',
+      isCustom: false,
+      isFavorite: false,
+      proxyMode: 'none' // Toffee stream already proxied via Cloudflare worker
+    },
+    {
+      id: 'stream-23',
+      name: 'Server 4',
       url: 'https://1nyaler.streamhostingcdn.top/stream/23/index.m3u8',
       category: 'HLS',
       logo: '',
@@ -42,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     {
       id: 'stream-32',
-      name: 'Server 4',
+      name: 'Server 5',
       url: 'https://1nyaler.streamhostingcdn.top/stream/32/index.m3u8',
       category: 'HLS',
       logo: '',
