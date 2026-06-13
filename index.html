@@ -34,7 +34,6 @@
       </div>
 
       <div class="current-channel-info" id="current-channel-info">
-        <div class="channel-avatar" id="header-channel-avatar">S</div>
         <div>
           <h1 class="channel-title" id="header-channel-name">Select a channel</h1>
           <span class="channel-status" id="header-channel-status">No stream active</span>
@@ -46,6 +45,10 @@
           <span class="pulse-dot"></span>
           <span class="status-text">Online</span>
         </div>
+        
+        <button class="btn-icon" id="btn-open-settings" title="Settings">
+          <i data-lucide="settings"></i>
+        </button>
       </div>
     </header>
 
@@ -61,7 +64,11 @@
           
           <!-- Loading Spinner -->
           <div class="player-overlay loading-overlay" id="loading-overlay" style="display: none;">
-            <div class="spinner"></div>
+            <div class="dot-loader">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
             <span>Loading stream...</span>
           </div>
 
@@ -165,49 +172,7 @@
 
       <!-- Bottom Dashboard Panel (Channels, Search & Actions) -->
       <section class="dashboard-bottom">
-        <div class="dashboard-controls-bar">
-          <!-- Search box -->
-          <div class="search-box">
-            <i data-lucide="search" class="search-icon"></i>
-            <input type="text" id="search-input" placeholder="Search channels..." autocomplete="off">
-            <button class="clear-search-btn" id="clear-search-btn" style="display: none;">
-              <i data-lucide="x" class="small-icon"></i>
-            </button>
-          </div>
-          
-          <!-- Filter tabs -->
-          <div class="filter-tabs">
-            <button class="tab-btn active" data-tab="all">All Channels</button>
-            <button class="tab-btn" data-tab="favorites">
-              <i data-lucide="star" class="tab-icon"></i>Favorites
-            </button>
-            <button class="tab-btn" data-tab="custom">
-              <i data-lucide="plus-circle" class="tab-icon"></i>Customs
-            </button>
-          </div>
 
-          <!-- Options Dropdown -->
-          <div class="options-dropdown-container">
-            <button class="btn-icon" id="btn-options-dropdown" title="More Options">
-              <i data-lucide="more-vertical"></i>
-            </button>
-            <div class="options-dropdown-menu" id="options-dropdown-menu" style="display: none;">
-              <button class="dropdown-item" id="btn-open-add-channel">
-                <i data-lucide="plus"></i>Add Channel
-              </button>
-              <button class="dropdown-item" id="btn-open-settings">
-                <i data-lucide="settings"></i>Settings
-              </button>
-              <button class="dropdown-item" id="btn-import-playlist-trigger">
-                <i data-lucide="upload"></i>Import M3U / JSON
-              </button>
-              <button class="dropdown-item" id="btn-export-playlist">
-                <i data-lucide="download"></i>Export Playlist
-              </button>
-            </div>
-            <input type="file" id="file-import-playlist" accept=".json,.m3u" style="display: none;">
-          </div>
-        </div>
 
         <!-- Channel List Grid -->
         <div class="channel-grid-container">
@@ -224,44 +189,7 @@
   </div>
 
   <!-- Modal: Add Channel -->
-  <div class="modal-backdrop" id="modal-add-channel" style="display: none;">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Add Custom Channel</h3>
-        <button class="btn-icon modal-close-btn" data-close="modal-add-channel">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-      <form id="add-channel-form">
-        <div class="form-group">
-          <label for="ch-name">Channel Name *</label>
-          <input type="text" id="ch-name" required placeholder="e.g., ESPN HD">
-        </div>
-        <div class="form-group">
-          <label for="ch-url">Stream URL (.m3u8 or .ts) *</label>
-          <input type="url" id="ch-url" required placeholder="e.g., https://example.com/live.m3u8">
-        </div>
-        <div class="form-group">
-          <label for="ch-category">Category</label>
-          <select id="ch-category">
-            <option value="Custom" selected>Custom</option>
-            <option value="Sports">Sports</option>
-            <option value="News">News</option>
-            <option value="Entertainment">Entertainment</option>
-            <option value="Movies">Movies</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="ch-logo">Logo URL (Optional)</label>
-          <input type="url" id="ch-logo" placeholder="e.g., https://example.com/logo.png">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-close="modal-add-channel">Cancel</button>
-          <button type="submit" class="btn btn-primary">Add Channel</button>
-        </div>
-      </form>
-    </div>
-  </div>
+
 
   <!-- Modal: Settings & CORS Proxy -->
   <div class="modal-backdrop" id="modal-settings" style="display: none;">
@@ -328,11 +256,11 @@
           </ul>
         </div>
 
-        <!-- Custom Playlist section -->
+        <!-- Reset section -->
         <div class="settings-section">
           <h4>Reset & Data Management</h4>
-          <p class="settings-desc">Clear your custom channels and reload default settings.</p>
-          <button class="btn btn-danger" id="btn-reset-app">Reset App Settings & Custom Channels</button>
+          <p class="settings-desc">Reset all stream proxy and player settings to their defaults.</p>
+          <button class="btn btn-danger" id="btn-reset-app">Reset Settings</button>
         </div>
       </div>
 

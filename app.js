@@ -11,34 +11,34 @@ document.addEventListener('DOMContentLoaded', () => {
   // 'all'   = Full proxy for CORS-restricted sources (server handles all traffic)
   const DEFAULT_CHANNELS = [
     {
+      id: 'live-ts-stream',
+      name: 'Server 1',
+      url: 'http://rgkkw.live:80/live/1Aoen7elp5/IgMJ60tmAa/130714.ts',
+      category: 'TS',
+      logo: '',
+      isCustom: false,
+      isFavorite: false,
+      proxyMode: 'all' // TS redirect chain requires full proxy
+    },
+    {
       id: 'stream-23',
-      name: 'Stream 23',
+      name: 'Server 2',
       url: 'https://1nyaler.streamhostingcdn.top/stream/23/index.m3u8',
-      category: 'Sports',
-      logo: '⚽',
+      category: 'HLS',
+      logo: '',
       isCustom: false,
       isFavorite: false,
       proxyMode: 'smart' // Only manifest proxied, video chunks direct
     },
     {
       id: 'stream-32',
-      name: 'Stream 32',
+      name: 'Server 3',
       url: 'https://1nyaler.streamhostingcdn.top/stream/32/index.m3u8',
-      category: 'Sports',
-      logo: '🏏',
+      category: 'HLS',
+      logo: '',
       isCustom: false,
       isFavorite: false,
       proxyMode: 'smart' // Only manifest proxied, video chunks direct
-    },
-    {
-      id: 'live-ts-stream',
-      name: 'Live TS Stream (MPEG-TS)',
-      url: 'http://rgkkw.live:80/live/1Aoen7elp5/IgMJ60tmAa/130714.ts',
-      category: 'News',
-      logo: 'TS',
-      isCustom: false,
-      isFavorite: false,
-      proxyMode: 'all' // TS redirect chain requires full proxy
     }
   ];
 
@@ -68,8 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ambientGlow = document.getElementById('ambient-glow');
   const channelList = document.getElementById('channel-list');
   const emptyState = document.getElementById('empty-state');
-  const searchInput = document.getElementById('search-input');
-  const clearSearchBtn = document.getElementById('clear-search-btn');
+  // Search elements removed per user request
   const connectionStatus = document.getElementById('connection-status');
   
   // Header details
@@ -108,20 +107,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const progressHandle = document.getElementById('progress-handle');
   
   // Modals & Buttons
-  const modalAddChannel = document.getElementById('modal-add-channel');
   const modalSettings = document.getElementById('modal-settings');
-  const btnOpenAddChannel = document.getElementById('btn-open-add-channel');
   const btnOpenSettings = document.getElementById('btn-open-settings');
-  const btnExportPlaylist = document.getElementById('btn-export-playlist');
-  const btnImportPlaylistTrigger = document.getElementById('btn-import-playlist-trigger');
-  const fileImportPlaylist = document.getElementById('file-import-playlist');
-  const addChannelForm = document.getElementById('add-channel-form');
   const btnResetApp = document.getElementById('btn-reset-app');
   const btnRetryStream = document.getElementById('btn-retry-stream');
   const btnCorsTroubleshoot = document.getElementById('btn-cors-troubleshoot');
   const btnToggleProxyError = document.getElementById('btn-toggle-proxy-error');
-  const btnOptionsDropdown = document.getElementById('btn-options-dropdown');
-  const optionsDropdownMenu = document.getElementById('options-dropdown-menu');
   
   // Settings Inputs
   const settingUseProxy = document.getElementById('setting-use-proxy');
@@ -201,32 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function loadChannels() {
-    const CHANNEL_VERSION = '9'; // Bump this to force-reload default channels with working URLs
-    const savedVersion = localStorage.getItem('iptv_channels_v');
-    const saved = localStorage.getItem('iptv_channels');
-
-    if (savedVersion !== CHANNEL_VERSION) {
-      // Clean migration: clear ALL old data and reload fresh defaults
-      // This removes any malformed entries from old React/Vite migration
-      localStorage.removeItem('iptv_channels');
-      localStorage.removeItem('subsdrop_channels_v3'); // Old React version key
-      channels = [...DEFAULT_CHANNELS];
-      localStorage.setItem('iptv_channels_v', CHANNEL_VERSION);
-      saveChannels();
-    } else if (saved) {
-      try {
-        channels = JSON.parse(saved);
-      } catch (e) {
-        channels = [...DEFAULT_CHANNELS];
-      }
-    } else {
-      channels = [...DEFAULT_CHANNELS];
-      saveChannels();
-    }
-  }
-
-  function saveChannels() {
-    localStorage.setItem('iptv_channels', JSON.stringify(channels));
+    localStorage.removeItem('iptv_channels');
+    channels = [...DEFAULT_CHANNELS];
   }
 
   function updateConnectionStatus() {
@@ -243,68 +210,21 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderChannels() {
     channelList.innerHTML = '';
     
-    // Filter
-    let filtered = channels.filter(ch => {
-      // Tab filter
-      if (activeTab === 'favorites' && !ch.isFavorite) return false;
-      if (activeTab === 'custom' && !ch.isCustom) return false;
-      
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        return ch.name.toLowerCase().includes(query) || 
-               ch.category.toLowerCase().includes(query) ||
-               ch.url.toLowerCase().includes(query);
-      }
-      return true;
-    });
-
-    if (filtered.length === 0) {
-      emptyState.style.display = 'flex';
-    } else {
-      emptyState.style.display = 'none';
-    }
-
-    filtered.forEach(ch => {
+    channels.forEach((ch, index) => {
       const li = document.createElement('li');
       li.className = `channel-item ${ch.id === activeChannelId ? 'active' : ''}`;
       li.setAttribute('data-id', ch.id);
       
-      const isMpegTs = ch.url.toLowerCase().includes('.ts') || !ch.url.toLowerCase().includes('.m3u8');
-      const extBadge = isMpegTs ? '<span class="channel-badge mpegts">TS</span>' : '<span class="channel-badge hls">HLS</span>';
-      const customBadge = ch.isCustom ? '<span class="channel-badge custom-badge">Custom</span>' : '';
-      
-      const avatarChar = ch.name.trim().charAt(0);
-      const isLogoUrl = ch.logo && (ch.logo.startsWith('http://') || ch.logo.startsWith('https://'));
-      const avatarContent = isLogoUrl 
-        ? `<img src="${ch.logo}" alt="${ch.name}" onerror="this.style.display='none'; this.parentElement.innerText='${avatarChar}'">`
-        : (ch.logo || avatarChar);
+      const serverName = `Server ${index + 1}`;
       
       li.innerHTML = `
-        <div class="channel-avatar">
-          ${avatarContent}
-        </div>
         <div class="channel-details">
-          <div class="channel-name" title="${ch.name}">${ch.name}</div>
-          <div class="channel-meta-tags">
-            ${extBadge}
-            ${customBadge}
-            <span class="channel-badge">${ch.category}</span>
-          </div>
+          <span class="channel-name">${serverName}</span>
         </div>
-        <button class="channel-fav-btn ${ch.isFavorite ? 'active' : ''}" title="Favorite">
-          <i data-lucide="star"></i>
-        </button>
       `;
 
       // Click to select channel
-      li.addEventListener('click', (e) => {
-        // Prevent trigger if clicking favorite button
-        if (e.target.closest('.channel-fav-btn')) {
-          e.stopPropagation();
-          toggleFavorite(ch.id);
-          return;
-        }
+      li.addEventListener('click', () => {
         selectChannel(ch.id);
       });
 
@@ -319,28 +239,40 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Player Controllers ---
   function selectChannel(id) {
     activeChannelId = id;
-    const channel = channels.find(c => c.id === id);
+    const channelIndex = channels.findIndex(c => c.id === id);
+    const channel = channels[channelIndex];
     if (!channel) return;
 
-    // Update Sidebar active state styling
+    // Update Sidebar active state styling and add streaming indicator
     document.querySelectorAll('.channel-item').forEach(el => {
+      const details = el.querySelector('.channel-details');
+      if (details) {
+        const existing = details.querySelector('.streaming-indicator');
+        if (existing) existing.remove();
+      }
+      
       if (el.getAttribute('data-id') === id) {
         el.classList.add('active');
+        if (details) {
+          const indicator = document.createElement('div');
+          indicator.className = 'streaming-indicator';
+          indicator.innerHTML = `
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+          `;
+          details.appendChild(indicator);
+        }
       } else {
         el.classList.remove('active');
       }
     });
 
     // Update Header Details
-    headerChannelName.textContent = channel.name;
+    const serverName = `Server ${channelIndex + 1}`;
+    headerChannelName.textContent = serverName;
     headerChannelStatus.innerHTML = `<i data-lucide="radio" class="inline-icon"></i> Connecting...`;
     
-    // Set Header Avatar
-    const avatarChar = channel.name.trim().charAt(0);
-    const isHeaderLogoUrl = channel.logo && (channel.logo.startsWith('http://') || channel.logo.startsWith('https://'));
-    headerChannelAvatar.innerHTML = isHeaderLogoUrl ? `<img src="${channel.logo}" alt="${channel.name}">` : (channel.logo || avatarChar);
-    headerChannelAvatar.style.background = getGlowColor(channel.name);
-
     if (window.lucide) {
       window.lucide.createIcons();
     }
@@ -760,53 +692,63 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function triggerStateIndicator(action) {
-    stateOverlayIcon.setAttribute('data-lucide', action);
-    if (window.lucide) window.lucide.createIcons();
-    showOverlay(stateOverlay, true);
-    setTimeout(() => {
-      showOverlay(stateOverlay, false);
-    }, 500);
+    const overlay = document.getElementById('state-overlay');
+    if (overlay) {
+      overlay.innerHTML = `<i data-lucide="${action}" id="state-overlay-icon"></i>`;
+      if (window.lucide) window.lucide.createIcons();
+      showOverlay(overlay, true);
+      setTimeout(() => {
+        showOverlay(overlay, false);
+      }, 500);
+    }
   }
 
   function updatePlayPauseIcons(isPaused) {
-    if (isPaused) {
-      playIcon.setAttribute('data-lucide', 'play');
-    } else {
-      playIcon.setAttribute('data-lucide', 'pause');
+    const playPauseBtn = document.getElementById('ctrl-play-pause');
+    if (playPauseBtn) {
+      playPauseBtn.innerHTML = isPaused 
+        ? `<i data-lucide="play" id="ctrl-play-icon"></i>` 
+        : `<i data-lucide="pause" id="ctrl-play-icon"></i>`;
+      if (window.lucide) window.lucide.createIcons();
     }
-    if (window.lucide) window.lucide.createIcons();
   }
 
   function handleVolumeChange() {
     video.volume = volumeSlider.value;
     video.muted = video.volume === 0;
     
-    // Update Icons
+    let iconName = 'volume-2';
     if (video.muted || video.volume === 0) {
-      volumeIcon.setAttribute('data-lucide', 'volume-x');
+      iconName = 'volume-x';
     } else if (video.volume < 0.5) {
-      volumeIcon.setAttribute('data-lucide', 'volume-1');
-    } else {
-      volumeIcon.setAttribute('data-lucide', 'volume-2');
+      iconName = 'volume-1';
     }
-    if (window.lucide) window.lucide.createIcons();
+    
+    const muteBtn = document.getElementById('ctrl-mute');
+    if (muteBtn) {
+      muteBtn.innerHTML = `<i data-lucide="${iconName}" id="ctrl-volume-icon"></i>`;
+      if (window.lucide) window.lucide.createIcons();
+    }
   }
 
   function toggleMute() {
     video.muted = !video.muted;
+    let iconName = 'volume-2';
     if (video.muted) {
-      volumeIcon.setAttribute('data-lucide', 'volume-x');
       volumeSlider.value = 0;
+      iconName = 'volume-x';
     } else {
       volumeSlider.value = video.volume || 0.8;
       video.volume = volumeSlider.value;
       if (video.volume < 0.5) {
-        volumeIcon.setAttribute('data-lucide', 'volume-1');
-      } else {
-        volumeIcon.setAttribute('data-lucide', 'volume-2');
+        iconName = 'volume-1';
       }
     }
-    if (window.lucide) window.lucide.createIcons();
+    const muteBtn = document.getElementById('ctrl-mute');
+    if (muteBtn) {
+      muteBtn.innerHTML = `<i data-lucide="${iconName}" id="ctrl-volume-icon"></i>`;
+      if (window.lucide) window.lucide.createIcons();
+    }
   }
 
   function formatTime(seconds) {
@@ -870,12 +812,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateFullscreenIcon() {
-    if (document.fullscreenElement) {
-      fullscreenIcon.setAttribute('data-lucide', 'minimize');
-    } else {
-      fullscreenIcon.setAttribute('data-lucide', 'maximize');
+    const fullscreenBtn = document.getElementById('ctrl-fullscreen');
+    if (fullscreenBtn) {
+      if (document.fullscreenElement) {
+        fullscreenBtn.innerHTML = `<i data-lucide="minimize" id="ctrl-fullscreen-icon"></i>`;
+      } else {
+        fullscreenBtn.innerHTML = `<i data-lucide="maximize" id="ctrl-fullscreen-icon"></i>`;
+      }
+      if (window.lucide) window.lucide.createIcons();
     }
-    if (window.lucide) window.lucide.createIcons();
   }
 
   function togglePip() {
@@ -961,115 +906,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- Playlist Parsers ---
-  function handleImportFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target.result;
-      if (file.name.endsWith('.json')) {
-        parseJsonPlaylist(content);
-      } else {
-        parseM3uPlaylist(content);
-      }
-      fileImportPlaylist.value = '';
-    };
-    reader.readAsText(file);
-  }
-
-  function parseJsonPlaylist(text) {
-    try {
-      const imported = JSON.parse(text);
-      if (Array.isArray(imported)) {
-        imported.forEach(ch => {
-          if (ch.name && ch.url) {
-            addNewChannel(ch.name, ch.url, ch.category || 'Custom', ch.logo || '');
-          }
-        });
-        saveChannels();
-        renderChannels();
-        alert('Playlist imported successfully.');
-      } else {
-        alert('Invalid JSON playlist structure.');
-      }
-    } catch (e) {
-      alert('Error reading JSON playlist file.');
-    }
-  }
-
-  function parseM3uPlaylist(text) {
-    const lines = text.split('\n');
-    let channelCount = 0;
-    
-    let currentName = '';
-    let currentLogo = '';
-    let currentCategory = 'Custom';
-
-    lines.forEach(line => {
-      line = line.trim();
-      
-      if (line.startsWith('#EXTINF:')) {
-        const logoMatch = line.match(/tvg-logo="([^"]+)"/);
-        const groupMatch = line.match(/group-title="([^"]+)"/);
-        
-        currentLogo = logoMatch ? logoMatch[1] : '';
-        currentCategory = groupMatch ? groupMatch[1] : 'Custom';
-        
-        const commaIndex = line.lastIndexOf(',');
-        if (commaIndex !== -1) {
-          currentName = line.substring(commaIndex + 1).trim();
-        } else {
-          currentName = 'M3U Channel';
-        }
-      } else if (line && !line.startsWith('#')) {
-        if (currentName) {
-          addNewChannel(currentName, line, currentCategory, currentLogo);
-          channelCount++;
-          // Reset
-          currentName = '';
-          currentLogo = '';
-          currentCategory = 'Custom';
-        }
-      }
-    });
-
-    if (channelCount > 0) {
-      saveChannels();
-      renderChannels();
-      alert(`Successfully imported ${channelCount} channels.`);
-    } else {
-      alert('Could not find any channels in this M3U file.');
-    }
-  }
-
-  function addNewChannel(name, url, category, logo) {
-    const duplicate = channels.find(c => c.url.toLowerCase() === url.toLowerCase().trim());
-    if (duplicate) return;
-
-    const id = 'custom-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    channels.push({
-      id: id,
-      name: name,
-      url: url,
-      category: category || 'Custom',
-      logo: logo || '',
-      isCustom: true,
-      isFavorite: false
-    });
-  }
-
-  function exportPlaylist() {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(channels, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `subsdrop_tv_playlist_${Date.now()}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  }
-
   // --- Event Listeners Setup ---
   function setupEventListeners() {
     // Video Playback
@@ -1080,6 +916,31 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Playback Click Overlay / Control bar
     video.addEventListener('click', togglePlayPause);
+    
+    // Toggle play/pause when clicking empty space on the screen control overlay
+    videoControls.addEventListener('click', (e) => {
+      if (!e.target.closest('button') && !e.target.closest('input') && !e.target.closest('.controls-bottom-panel') && !e.target.closest('.quality-popover')) {
+        togglePlayPause();
+      }
+    });
+
+    // Buffering & Loading indicators
+    video.addEventListener('waiting', () => {
+      showOverlay(loadingOverlay, true);
+    });
+    video.addEventListener('playing', () => {
+      showOverlay(loadingOverlay, false);
+    });
+    video.addEventListener('seeking', () => {
+      showOverlay(loadingOverlay, true);
+    });
+    video.addEventListener('seeked', () => {
+      showOverlay(loadingOverlay, false);
+    });
+    video.addEventListener('canplay', () => {
+      showOverlay(loadingOverlay, false);
+    });
+
     playPauseBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       togglePlayPause();
@@ -1123,56 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Keyboard Shortcuts
     document.addEventListener('keydown', handleKeyboardShortcuts);
 
-    // Search Box Listener
-    searchInput.addEventListener('input', () => {
-      searchQuery = searchInput.value;
-      clearSearchBtn.style.display = searchQuery ? 'inline-flex' : 'none';
-      renderChannels();
-    });
-    clearSearchBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      searchQuery = '';
-      clearSearchBtn.style.display = 'none';
-      renderChannels();
-    });
-
-    // Dashboard Category Filter Tabs
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        activeTab = btn.getAttribute('data-tab');
-        renderChannels();
-      });
-    });
-
-    // Options Dropdown Toggle Events
-    if (btnOptionsDropdown && optionsDropdownMenu) {
-      btnOptionsDropdown.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isOpen = optionsDropdownMenu.style.display === 'flex';
-        optionsDropdownMenu.style.display = isOpen ? 'none' : 'flex';
-      });
-
-      // Close dropdown when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!optionsDropdownMenu.contains(e.target) && e.target !== btnOptionsDropdown && !btnOptionsDropdown.contains(e.target)) {
-          optionsDropdownMenu.style.display = 'none';
-        }
-      });
-
-      // Close dropdown when clicking any item inside it
-      optionsDropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
-        item.addEventListener('click', () => {
-          optionsDropdownMenu.style.display = 'none';
-        });
-      });
-    }
-
-    // Modals Open/Close Events
-    btnOpenAddChannel.addEventListener('click', () => {
-      modalAddChannel.style.display = 'flex';
-    });
+    // Settings Modal Trigger
     btnOpenSettings.addEventListener('click', () => {
       modalSettings.style.display = 'flex';
     });
@@ -1230,37 +1042,9 @@ document.addEventListener('DOMContentLoaded', () => {
       modalSettings.style.display = 'flex';
     });
 
-    // Add Custom Channel form submit
-    addChannelForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = document.getElementById('ch-name').value.trim();
-      const url = document.getElementById('ch-url').value.trim();
-      const category = document.getElementById('ch-category').value;
-      const logo = document.getElementById('ch-logo').value.trim();
-
-      addNewChannel(name, url, category, logo);
-      saveChannels();
-      renderChannels();
-
-      // Reset & Close
-      addChannelForm.reset();
-      modalAddChannel.style.display = 'none';
-      
-      // Auto-play the newly added channel
-      const lastChan = channels[channels.length - 1];
-      if (lastChan) selectChannel(lastChan.id);
-    });
-
-    // Export & Import triggers
-    btnExportPlaylist.addEventListener('click', exportPlaylist);
-    btnImportPlaylistTrigger.addEventListener('click', () => {
-      fileImportPlaylist.click();
-    });
-    fileImportPlaylist.addEventListener('change', handleImportFile);
-
     // Hard reset app settings
     btnResetApp.addEventListener('click', () => {
-      if (confirm('Are you sure you want to reset all custom channels and restore defaults? This cannot be undone.')) {
+      if (confirm('Are you sure you want to reset all app settings? This cannot be undone.')) {
         localStorage.removeItem('iptv_channels');
         localStorage.removeItem('iptv_use_proxy');
         localStorage.removeItem('iptv_proxy_url');
