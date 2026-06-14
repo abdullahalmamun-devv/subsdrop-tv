@@ -69,6 +69,16 @@ document.addEventListener('DOMContentLoaded', () => {
       isCustom: false,
       isFavorite: false,
       proxyMode: 'smart' // Only manifest proxied, video chunks direct
+    },
+    {
+      id: 'test-somoy-tv',
+      name: 'Somoy TV (Test)',
+      url: 'https://live.thebosstv.com:30443/dwlive/Somoy-TV/chunks.m3u8',
+      category: 'HLS',
+      logo: '',
+      isCustom: false,
+      isFavorite: false,
+      proxyMode: 'smart'
     }
   ];
 
