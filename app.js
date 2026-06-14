@@ -21,6 +21,16 @@ document.addEventListener('DOMContentLoaded', () => {
       proxyMode: 'smart' // Akamai HLS stream
     },
     {
+      id: 'stream-bd-vs-aus',
+      name: 'BD vs Aus',
+      url: 'https://premierleagpl23.akamaized.net/hls/live/2107108/Tapmad-P2s6L_EnG-FiN@L/level_0.m3u8',
+      category: 'HLS',
+      logo: '',
+      isCustom: false,
+      isFavorite: false,
+      proxyMode: 'smart' // Akamai HLS stream
+    },
+    {
       id: 'live-ts-stream',
       name: 'Server 2',
       url: 'http://rgkkw.live:80/live/1Aoen7elp5/IgMJ60tmAa/130714.ts',
@@ -274,11 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
       li.className = `channel-item ${ch.id === activeChannelId ? 'active' : ''}`;
       li.setAttribute('data-id', ch.id);
       
-      const serverName = `Server ${index + 1}`;
-      
       li.innerHTML = `
         <div class="channel-details">
-          <span class="channel-name">${serverName}</span>
+          <span class="channel-name">${ch.name}</span>
         </div>
       `;
 
@@ -328,8 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Update Header Details
-    const serverName = `Server ${channelIndex + 1}`;
-    headerChannelName.textContent = serverName;
+    headerChannelName.textContent = channel.name;
     headerChannelStatus.innerHTML = `<i data-lucide="radio" class="inline-icon"></i> Connecting...`;
     
     if (window.lucide) {
