@@ -81,9 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
       proxyMode: 'smart' // Only manifest proxied, video chunks direct
     }
   ];
-
-  const DEFAULT_CORS_PROXY = window.location.origin + '/proxy?url=';
-
+  const CLOUDFLARE_PROXIES = [
+    'https://subsdrop-proxy.alm40533.workers.dev/?url=',
+    'https://subsdrop-proxy2.softpremium13.workers.dev/?url=',
+    'https://subsdrop-proxy3.jihadabal122.workers.dev/?url='
+  ];
+  const DEFAULT_CORS_PROXY = 'cloudflare_balancer';
   // --- App State ---
   let channels = [];
   let activeChannelId = '';
@@ -236,9 +239,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadSettings() {
     // Version marker to force-migrate old settings where proxy was off by default
     const settingsVersion = localStorage.getItem('iptv_settings_v');
-    if (settingsVersion !== '2') {
-      // First run or upgrade from v1: force proxy ON with local proxy
-      localStorage.setItem('iptv_settings_v', '2');
+    if (settingsVersion !== '3') {
+      // Force proxy ON with Cloudflare worker
+      localStorage.setItem('iptv_settings_v', '3');
       localStorage.setItem('iptv_use_proxy', 'true');
       localStorage.setItem('iptv_proxy_url', DEFAULT_CORS_PROXY);
     }
@@ -251,7 +254,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Set proxy select dropdown
     const localPrefix = window.location.origin + '/proxy?url=';
-    if (corsProxyUrl === localPrefix || corsProxyUrl.includes('/proxy?url=')) {
+    if (corsProxyUrl === DEFAULT_CORS_PROXY || corsProxyUrl === 'cloudflare_balancer' || CLOUDFLARE_PROXIES.includes(corsProxyUrl)) {
+      settingProxySelect.value = 'cloudflare_balancer';
+      proxyUrlGroup.style.display = 'none';
+      corsProxyUrl = 'cloudflare_balancer'; // Normalize to balancer
+      localStorage.setItem('iptv_proxy_url', corsProxyUrl); // Update local storage
+    } else if (corsProxyUrl === localPrefix || corsProxyUrl.includes('/proxy?url=')) {
       settingProxySelect.value = 'local';
       proxyUrlGroup.style.display = 'none';
     } else if (corsProxyUrl === 'https://corsproxy.io/?url=' || corsProxyUrl === 'https://api.allorigins.win/raw?url=') {
@@ -409,9 +417,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    let isMpegTs = rawUrl.toLowerCase().includes('.ts') || (!rawUrl.toLowerCase().includes('.m3u8') && !rawUrl.toLowerCase().includes('.mp4'));
+
     let streamUrl = rawUrl;
     if (tryProxy) {
-      streamUrl = corsProxyUrl + encodeURIComponent(rawUrl);
+      // Load Balancing Logic: Randomly pick a proxy if balancer is selected
+      let activeProxy = corsProxyUrl;
+      if (activeProxy === 'cloudflare_balancer') {
+        activeProxy = CLOUDFLARE_PROXIES[Math.floor(Math.random() * CLOUDFLARE_PROXIES.length)];
+      }
+
+      // If it's an MPEG-TS stream, we MUST use the local proxy for FFmpeg audio transcoding.
+      // Cloudflare Worker cannot do audio conversion.
+      if (isMpegTs && activeProxy.includes('workers.dev')) {
+        streamUrl = window.location.origin + '/proxy?url=' + encodeURIComponent(rawUrl);
+      } else {
+        streamUrl = activeProxy + encodeURIComponent(rawUrl);
+      }
+      
       if (smartProxy) {
         streamUrl += '&smart=true';
         headerChannelStatus.innerHTML = `<i data-lucide="radio" class="inline-icon"></i> Connecting (Smart Proxy)...`;
@@ -422,8 +445,6 @@ document.addEventListener('DOMContentLoaded', () => {
       headerChannelStatus.innerHTML = `<i data-lucide="radio" class="inline-icon"></i> Connecting (Direct)...`;
     }
     if (window.lucide) window.lucide.createIcons();
-
-    const isMpegTs = rawUrl.toLowerCase().includes('.ts') || (!rawUrl.toLowerCase().includes('.m3u8') && !rawUrl.toLowerCase().includes('.mp4'));
 
     if (isMpegTs) {
       playMpegTsStream(streamUrl);
