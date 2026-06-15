@@ -4,6 +4,7 @@ const https = require('https');
 const path = require('path');
 const fs = require('fs');
 const { PassThrough } = require('stream');
+const { spawn } = require('child_process');
 
 const keepAliveAgentHttp = new http.Agent({ keepAlive: true, maxSockets: 150, keepAliveMsecs: 15000 });
 const keepAliveAgentHttps = new https.Agent({ keepAlive: true, maxSockets: 150, keepAliveMsecs: 15000 });
@@ -239,11 +240,53 @@ app.get('/proxy', (req, res) => {
             responseHeaders['content-type'] = 'video/mp2t';
             delete responseHeaders['content-length'];
             res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.writeHead(200, responseHeaders);
+
+            // Use FFmpeg to transcode audio (MP2/AC3 → AAC) so browsers can play it
+            // Video is passed through unchanged (copy) for zero quality loss and low CPU
+            const ffmpeg = spawn('ffmpeg', [
+              '-i', 'pipe:0',           // Read from stdin (piped upstream)
+              '-c:v', 'copy',           // Pass video through unchanged
+              '-c:a', 'aac',            // Re-encode audio to AAC (browser-compatible)
+              '-b:a', '128k',           // 128kbps audio bitrate
+              '-ac', '2',               // Stereo output
+              '-f', 'mpegts',           // Output format: MPEG-TS
+              '-movflags', '+faststart',
+              '-fflags', '+genpts+discardcorrupt',
+              '-err_detect', 'ignore_err',
+              '-reconnect', '1',
+              '-loglevel', 'error',
+              'pipe:1'                  // Write to stdout
+            ], { stdio: ['pipe', 'pipe', 'pipe'] });
+
+            // Pipe upstream TS → FFmpeg stdin → FFmpeg stdout → client response
+            proxyRes.pipe(ffmpeg.stdin);
+            ffmpeg.stdout.pipe(res);
+
+            ffmpeg.stderr.on('data', (data) => {
+              const msg = data.toString().trim();
+              if (msg) console.warn('[FFmpeg proxy]', msg);
+            });
+
+            // Clean up on client disconnect
+            res.on('close', () => {
+              try { ffmpeg.stdin.destroy(); } catch (e) {}
+              try { ffmpeg.kill('SIGTERM'); } catch (e) {}
+            });
+
+            ffmpeg.on('error', (err) => {
+              console.error('[FFmpeg proxy] Process error:', err.message);
+              if (!res.destroyed) res.destroy();
+            });
+
+            ffmpeg.stdin.on('error', () => {}); // Suppress EPIPE on early disconnect
+            ffmpeg.stdout.on('error', () => {}); // Suppress EPIPE on early disconnect
+          } else {
+            res.writeHead(200, responseHeaders);
+            // Pipe using PassThrough chute with 4MB buffer
+            const bufferChute = new PassThrough({ highWaterMark: 4 * 1024 * 1024 });
+            proxyRes.pipe(bufferChute).pipe(res);
           }
-          res.writeHead(200, responseHeaders);
-          // Pipe using PassThrough chute with 4MB buffer to pre-buffer video chunks on the server and absorb client network drops
-          const bufferChute = new PassThrough({ highWaterMark: 4 * 1024 * 1024 });
-          proxyRes.pipe(bufferChute).pipe(res);
         }
       });
 
@@ -344,6 +387,9 @@ function handleMulticastTsStream(req, res, targetUrl) {
   });
 }
 
+// Global reference to the FFmpeg transcoder process for multicast streams
+let activeFfmpegProcess = null;
+
 function startUpstreamTsStream(url) {
   try {
     const currentParsed = new URL(url);
@@ -388,7 +434,38 @@ function startUpstreamTsStream(url) {
         return;
       }
 
-      proxyRes.pipe(activeTsStream);
+      // Use FFmpeg to transcode audio (MP2/AC3 → AAC) for browser compatibility
+      const ffmpeg = spawn('ffmpeg', [
+        '-i', 'pipe:0',
+        '-c:v', 'copy',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-ac', '2',
+        '-f', 'mpegts',
+        '-fflags', '+genpts+discardcorrupt',
+        '-err_detect', 'ignore_err',
+        '-reconnect', '1',
+        '-loglevel', 'error',
+        'pipe:1'
+      ], { stdio: ['pipe', 'pipe', 'pipe'] });
+
+      activeFfmpegProcess = ffmpeg;
+
+      // Pipe: upstream → FFmpeg stdin, FFmpeg stdout → multicast PassThrough
+      proxyRes.pipe(ffmpeg.stdin);
+      ffmpeg.stdout.pipe(activeTsStream, { end: false });
+
+      ffmpeg.stderr.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) console.warn('[FFmpeg multicast]', msg);
+      });
+
+      ffmpeg.on('error', (err) => {
+        console.error('[FFmpeg multicast] Process error:', err.message);
+      });
+
+      ffmpeg.stdin.on('error', () => {}); // Suppress EPIPE
+      ffmpeg.stdout.on('error', () => {}); // Suppress EPIPE
     });
 
     upstreamRequest.on('timeout', () => {
@@ -419,6 +496,11 @@ function broadcastError(msg) {
 }
 
 function cleanupUpstreamTsStream() {
+  if (activeFfmpegProcess) {
+    try { activeFfmpegProcess.stdin.destroy(); } catch (e) {}
+    try { activeFfmpegProcess.kill('SIGTERM'); } catch (e) {}
+    activeFfmpegProcess = null;
+  }
   if (upstreamRequest) {
     try { upstreamRequest.destroy(); } catch (e) {}
     upstreamRequest = null;

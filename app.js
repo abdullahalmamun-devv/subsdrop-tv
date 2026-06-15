@@ -556,13 +556,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }, {
           enableWorker: true,
           enableStashBuffer: true,
-          stashInitialSize: 128 * 1024, // 128KB initial stash size for instant startup
+          stashInitialSize: 384 * 1024, // 384KB — large enough to capture PAT/PMT + first audio PES packets
           liveBufferLatencyChasing: false, // Disable chasing to prevent stuttering/buffer underruns
           lazyLoad: false,
           deferLoadAfterSourceOpen: false,
           autoCleanupSourceBuffer: true,
           autoCleanupMaxBackwardDuration: 60,
-          autoCleanupMinBackwardDuration: 30
+          autoCleanupMinBackwardDuration: 30,
+          fixAudioTimestampGap: true // Fix audio gaps that cause silent playback
         });
 
         mpegtsPlayer.attachMediaElement(video);
