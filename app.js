@@ -21,6 +21,16 @@ document.addEventListener('DOMContentLoaded', () => {
       proxyMode: 'smart' // CloudFront HLS stream
     },
     {
+      id: 'fifa-ts-2',
+      name: 'FIFA World Cup 4K',
+      url: 'http://starhub.pro/live/farhat-3379/67897-913379/742610.ts',
+      category: 'TS',
+      logo: 'https://i.ibb.co.com/nMBnLS9h/1000284536.png',
+      isCustom: false,
+      isFavorite: false,
+      proxyMode: 'all'
+    },
+    {
       id: 'stream-toffee',
       name: 'Server 1',
       url: 'https://toffee-seg.smartdev.workers.dev/manifest?url=https%3A%2F%2Fprod-cdn01-live.toffeelive.com%2Flive%2FFIFA-2026%2F0%2Fmaster_2000.m3u8&cookie=%22Expires%3D1781636307~_GO%3DGenerated~URLPrefix%3DaHR0cHM6Ly9wcm9kLWNkbjAxLWxpdmUudG9mZmVlbGl2ZS5jb20~Signature%3DAduQTZ9t0mGjlXJ3dtEAGqYTyE5PW__m1jRmMyHRZM7Jv_TYwRT9Trid7Q05okywyNi9k2RuilUaXJdSY9TFLLUrD5EN%22',
