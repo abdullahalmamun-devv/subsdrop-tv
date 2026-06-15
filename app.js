@@ -53,12 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 'toffee-live-stream',
       name: 'Server 3',
-      url: 'https://toffee-seg.smartdev.workers.dev/manifest?url=https%3A%2F%2Fprod-cdn01-live.toffeelive.com%2Flive%2FFIFA-2026%2F0%2Fmaster_1500.m3u8&cookie=%22Expires%3D1781468714~_GO%3DGenerated~URLPrefix%3DaHR0cHM6Ly9wcm9kLWNkbjAxLWxpdmUudG9mZmVlbGl2ZS5jb20~Signature%3DAaPNU3dEh2oiK4WNt5yscNtsmeh4d5bpqsa6qm_1CDbvhxU0quS6r700yd55OwDEXtm3Ia-CqHnDOEYjcDlH8WqoKMMI%22',
+      url: 'https://s3.us-east-2.amazonaws.com/cdnh111/hls/0/stream.m3u8',
       category: 'HLS',
       logo: '',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'none' // Toffee stream already proxied via Cloudflare worker
+      proxyMode: 'smart' // Toffee stream already proxied via Cloudflare worker
     },
     {
       id: 'stream-23',
@@ -79,16 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isCustom: false,
       isFavorite: false,
       proxyMode: 'smart' // Only manifest proxied, video chunks direct
-    },
-    {
-      id: 'stream-test',
-      name: 'Test Stream',
-      url: 'https://s3.us-east-2.amazonaws.com/cdnh111/hls/0/stream.m3u8',
-      category: 'HLS',
-      logo: '',
-      isCustom: false,
-      isFavorite: false,
-      proxyMode: 'smart' // CORS-friendly test stream
     }
   ];
 
@@ -101,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let useCorsProxy = true;
   let corsProxyUrl = DEFAULT_CORS_PROXY;
-  
+
   // Players
   let hlsInstance = null;
   let mpegtsPlayer = null;
@@ -111,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentStreamUrl = '';
   let retryWithProxyActive = false;
   let fallbackTimeout = null;
-  
+
   // --- DOM Elements ---
   const video = document.getElementById('video-element');
   const playerContainer = document.getElementById('player-container');
@@ -119,19 +109,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const channelList = document.getElementById('channel-list');
   const emptyState = document.getElementById('empty-state');
   // Search elements removed per user request
-  
+
   // Header details
   const headerChannelName = document.getElementById('header-channel-name');
   const headerChannelStatus = document.getElementById('header-channel-status');
   const headerChannelAvatar = document.getElementById('header-channel-avatar');
-  
+
   // Custom Overlays
   const loadingOverlay = document.getElementById('loading-overlay');
   const stateOverlay = document.getElementById('state-overlay');
   const stateOverlayIcon = document.getElementById('state-overlay-icon');
   const errorOverlay = document.getElementById('error-overlay');
   const errorMessage = document.getElementById('error-message');
-  
+
   // Custom Controls Elements
   const videoControls = document.getElementById('video-controls-overlay');
   const playPauseBtn = document.getElementById('ctrl-play-pause');
@@ -154,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const progressBuffer = document.getElementById('progress-buffer');
   const progressFill = document.getElementById('progress-fill');
   const progressHandle = document.getElementById('progress-handle');
-  
+
   // Modals & Buttons
   const modalSettings = document.getElementById('modal-settings');
   const btnOpenSettings = document.getElementById('btn-open-settings');
@@ -164,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnToggleProxyError = document.getElementById('btn-toggle-proxy-error');
   const modalDisclaimer = document.getElementById('modal-disclaimer');
   const btnOpenDisclaimer = document.getElementById('btn-open-disclaimer');
-  
+
   // Settings Inputs
   const settingUseProxy = document.getElementById('setting-use-proxy');
   const settingProxySelect = document.getElementById('setting-proxy-select');
@@ -179,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     renderChannels();
     initLiveStatsSSE();
-    
+
     // Auto-select first channel
     if (channels.length > 0) {
       selectChannel(channels[0].id);
@@ -196,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const liveViewersCount = document.getElementById('live-viewers-count');
     const statViewers = document.getElementById('stat-viewers');
     const statStreams = document.getElementById('stat-streams');
-    
+
     let eventSource = null;
     let reconnectTimeout = null;
 
@@ -215,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       eventSource.onmessage = (e) => {
         try {
           const stats = JSON.parse(e.data);
-          
+
           if (liveViewersCount) liveViewersCount.textContent = stats.viewers;
           if (statViewers) statViewers.textContent = stats.viewers;
           if (statStreams) statStreams.textContent = stats.activeTsStreams;
@@ -234,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (liveViewersBadge) {
           liveViewersBadge.style.display = 'none';
         }
-        
+
         clearTimeout(reconnectTimeout);
         reconnectTimeout = setTimeout(connect, 5000);
       };
@@ -256,9 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedProxy = localStorage.getItem('iptv_use_proxy');
     useCorsProxy = savedProxy === null ? true : savedProxy === 'true';
     corsProxyUrl = localStorage.getItem('iptv_proxy_url') || DEFAULT_CORS_PROXY;
-    
+
     settingUseProxy.checked = useCorsProxy;
-    
+
     // Set proxy select dropdown
     const localPrefix = window.location.origin + '/proxy?url=';
     if (corsProxyUrl === localPrefix || corsProxyUrl.includes('/proxy?url=')) {
@@ -272,13 +262,13 @@ document.addEventListener('DOMContentLoaded', () => {
       settingProxyUrl.value = corsProxyUrl;
       proxyUrlGroup.style.display = useCorsProxy ? 'flex' : 'none';
     }
-    
+
     proxySelectGroup.style.display = useCorsProxy ? 'flex' : 'none';
   }
 
   function saveSettings() {
     localStorage.setItem('iptv_use_proxy', useCorsProxy);
-    
+
     const selectVal = settingProxySelect.value;
     if (selectVal === 'local') {
       corsProxyUrl = window.location.origin + '/proxy?url=';
@@ -298,12 +288,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- UI Renderers ---
   function renderChannels() {
     channelList.innerHTML = '';
-    
+
     channels.forEach((ch, index) => {
       const li = document.createElement('li');
       li.className = `channel-item ${ch.id === activeChannelId ? 'active' : ''}`;
       li.setAttribute('data-id', ch.id);
-      
+
       li.innerHTML = `
         <div class="channel-details">
           <span class="channel-name">${ch.name}</span>
@@ -337,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const existing = details.querySelector('.streaming-indicator');
         if (existing) existing.remove();
       }
-      
+
       if (el.getAttribute('data-id') === id) {
         el.classList.add('active');
         if (details) {
@@ -358,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update Header Details
     headerChannelName.textContent = channel.name;
     headerChannelStatus.innerHTML = `<i data-lucide="radio" class="inline-icon"></i> Connecting...`;
-    
+
     if (window.lucide) {
       window.lucide.createIcons();
     }
@@ -460,14 +450,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (retryWithProxyActive) {
       // Automatic proxy fallback: try the opposite of current proxy state
       retryWithProxyActive = false; // Prevent infinite loop
-      
+
       // Determine what was just tried and what to try next
-      const wasTryingProxy = currentStreamUrl !== '' && 
+      const wasTryingProxy = currentStreamUrl !== '' &&
         (document.querySelector('#header-channel-status')?.textContent?.includes('Proxy') || useCorsProxy);
       const nextTryProxy = !wasTryingProxy;
-      
-      const msg = nextTryProxy 
-        ? 'Direct connection failed. Retrying via CORS Proxy...' 
+
+      const msg = nextTryProxy
+        ? 'Direct connection failed. Retrying via CORS Proxy...'
         : 'Proxy failed. Retrying direct connection...';
       console.log(msg);
       headerChannelStatus.innerHTML = `<i data-lucide="refresh-cw" class="inline-icon"></i> ${msg}`;
@@ -538,7 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showOverlay(loadingOverlay, false);
         headerChannelStatus.innerHTML = `<i data-lucide="play" class="inline-icon"></i> Streaming Live (HLS Native)`;
         if (window.lucide) window.lucide.createIcons();
-        video.play().catch(() => {});
+        video.play().catch(() => { });
       });
       video.addEventListener('error', () => {
         clearTimeout(fallbackTimeout);
@@ -554,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Strategy: Try multiple approaches for TS playback
     // 1. mpegts.js (best quality, with proper config)
     // 2. Native video.src fallback (simpler, works in some browsers)
-    
+
     if (mpegts.getFeatureList().mseLivePlayback) {
       try {
         mpegtsPlayer = mpegts.createPlayer({
@@ -574,7 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
           autoCleanupMaxBackwardDuration: 60,
           autoCleanupMinBackwardDuration: 30
         });
-        
+
         mpegtsPlayer.attachMediaElement(video);
         mpegtsPlayer.load();
         mpegtsPlayer.play().catch(() => {
@@ -597,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mpegtsPlayer.on(mpegts.Events.STATISTICS_INFO, onTsStreamReady);
         mpegtsPlayer.on(mpegts.Events.MEDIA_INFO, onTsStreamReady);
         mpegtsPlayer.on(mpegts.Events.LOADING_COMPLETE, onTsStreamReady);
-        
+
         video.addEventListener('loadeddata', onTsStreamReady, { once: true });
         video.addEventListener('canplay', onTsStreamReady, { once: true });
         video.addEventListener('playing', onTsStreamReady, { once: true });
@@ -633,14 +623,14 @@ document.addEventListener('DOMContentLoaded', () => {
         mpegtsPlayer.unload();
         mpegtsPlayer.detachMediaElement();
         mpegtsPlayer.destroy();
-      } catch (e) {}
+      } catch (e) { }
       mpegtsPlayer = null;
     }
 
     // Try direct video.src — browsers may handle MPEG-TS natively
     video.src = url;
     video.load();
-    
+
     let nativeReady = false;
     function onNativeReady() {
       if (nativeReady) return;
@@ -687,14 +677,14 @@ document.addEventListener('DOMContentLoaded', () => {
     showOverlay(errorOverlay, true);
     headerChannelStatus.innerHTML = `<i data-lucide="alert-circle" class="inline-icon"></i> Error Playing`;
     errorMessage.textContent = msg;
-    
+
     // Toggle error card button state
     if (useCorsProxy) {
       btnToggleProxyError.innerHTML = `<i data-lucide="shield-off" class="btn-icon-left"></i>Disable Proxy`;
     } else {
       btnToggleProxyError.innerHTML = `<i data-lucide="shield" class="btn-icon-left"></i>Enable Proxy`;
     }
-    
+
     if (window.lucide) window.lucide.createIcons();
   }
 
@@ -716,16 +706,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function setupQualitySelector() {
     if (!hlsInstance) return;
     const levels = hlsInstance.levels;
-    
+
     if (levels && levels.length > 1) {
       qualityBtn.style.display = 'inline-flex';
       qualityList.innerHTML = `<li class="quality-item active" data-index="-1">Auto</li>`;
-      
+
       levels.forEach((level, index) => {
         const height = level.height;
         const bitrate = Math.round(level.bitrate / 1000);
         const name = height ? `${height}p (${bitrate}kbps)` : `Level ${index} (${bitrate}kbps)`;
-        
+
         const li = document.createElement('li');
         li.className = 'quality-item';
         li.setAttribute('data-index', index);
@@ -738,12 +728,12 @@ document.addEventListener('DOMContentLoaded', () => {
         item.addEventListener('click', () => {
           qualityList.querySelectorAll('.quality-item').forEach(el => el.classList.remove('active'));
           item.classList.add('active');
-          
+
           const index = parseInt(item.getAttribute('data-index'));
           hlsInstance.currentLevel = index;
-          
+
           qualityPopover.style.display = 'none';
-          
+
           // Show active height badge
           if (index === -1) {
             resolutionIndicator.style.display = 'none';
@@ -760,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function toggleFavorite(id) {
     const ch = channels.find(c => c.id === id);
     if (!ch) return;
-    
+
     ch.isFavorite = !ch.isFavorite;
     saveChannels();
     renderChannels();
@@ -769,7 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Controls Interaction ---
   function togglePlayPause() {
     if (video.paused) {
-      video.play().catch(() => {});
+      video.play().catch(() => { });
       triggerStateIndicator('play');
     } else {
       video.pause();
@@ -792,8 +782,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function updatePlayPauseIcons(isPaused) {
     const playPauseBtn = document.getElementById('ctrl-play-pause');
     if (playPauseBtn) {
-      playPauseBtn.innerHTML = isPaused 
-        ? `<i data-lucide="play" id="ctrl-play-icon"></i>` 
+      playPauseBtn.innerHTML = isPaused
+        ? `<i data-lucide="play" id="ctrl-play-icon"></i>`
         : `<i data-lucide="pause" id="ctrl-play-icon"></i>`;
       if (window.lucide) window.lucide.createIcons();
     }
@@ -802,14 +792,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleVolumeChange() {
     video.volume = volumeSlider.value;
     video.muted = video.volume === 0;
-    
+
     let iconName = 'volume-2';
     if (video.muted || video.volume === 0) {
       iconName = 'volume-x';
     } else if (video.volume < 0.5) {
       iconName = 'volume-1';
     }
-    
+
     const muteBtn = document.getElementById('ctrl-mute');
     if (muteBtn) {
       muteBtn.innerHTML = `<i data-lucide="${iconName}" id="ctrl-volume-icon"></i>`;
@@ -842,7 +832,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
-    
+
     const parts = [
       m.toString().padStart(2, '0'),
       s.toString().padStart(2, '0')
@@ -856,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const duration = video.duration;
 
     const isLive = !duration || duration === Infinity || isNaN(duration);
-    
+
     if (isLive) {
       timeDisplay.textContent = `${formatTime(current)} / LIVE`;
       progressFill.style.width = '100%';
@@ -888,10 +878,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function toggleFullscreen() {
-    const isFullscreen = document.fullscreenElement || 
-                         document.webkitFullscreenElement || 
-                         document.mozFullScreenElement || 
-                         document.msFullscreenElement;
+    const isFullscreen = document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement;
 
     if (!isFullscreen) {
       if (playerContainer.requestFullscreen) {
@@ -959,7 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetIdleTimer() {
     playerContainer.classList.remove('idle');
     clearTimeout(idleTimer);
-    
+
     if (!video.paused) {
       idleTimer = setTimeout(() => {
         playerContainer.classList.add('idle');
@@ -1019,10 +1009,10 @@ document.addEventListener('DOMContentLoaded', () => {
     video.addEventListener('pause', () => updatePlayPauseIcons(true));
     video.addEventListener('timeupdate', updateProgressBar);
     video.addEventListener('progress', updateProgressBar);
-    
+
     // Playback Click Overlay / Control bar
     video.addEventListener('click', togglePlayPause);
-    
+
     // Toggle play/pause when clicking empty space on the screen control overlay
     videoControls.addEventListener('click', (e) => {
       if (!e.target.closest('button') && !e.target.closest('input') && !e.target.closest('.controls-bottom-panel') && !e.target.closest('.quality-popover')) {
@@ -1051,15 +1041,15 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
       togglePlayPause();
     });
-    
+
     // Volume Control
     volumeSlider.addEventListener('input', handleVolumeChange);
     muteBtn.addEventListener('click', toggleMute);
-    
+
     // Video Hover Idle UI
     playerContainer.addEventListener('mousemove', resetIdleTimer);
     playerContainer.addEventListener('click', resetIdleTimer);
-    
+
     // Progress Seeking
     progressBarContainer.addEventListener('click', seek);
     let isSeeking = false;
@@ -1102,7 +1092,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalDisclaimer.style.display = 'flex';
       });
     }
-    
+
     document.querySelectorAll('.modal-close-btn, [data-close]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const modalId = btn.getAttribute('data-close') || btn.closest('.modal-backdrop').id;
@@ -1114,14 +1104,14 @@ document.addEventListener('DOMContentLoaded', () => {
     settingUseProxy.addEventListener('change', () => {
       useCorsProxy = settingUseProxy.checked;
       proxySelectGroup.style.display = useCorsProxy ? 'flex' : 'none';
-      
+
       const selectVal = settingProxySelect.value;
       if (useCorsProxy && selectVal === 'custom') {
         proxyUrlGroup.style.display = 'flex';
       } else {
         proxyUrlGroup.style.display = 'none';
       }
-      
+
       saveSettings();
     });
     settingProxySelect.addEventListener('change', () => {
@@ -1148,7 +1138,7 @@ document.addEventListener('DOMContentLoaded', () => {
       settingUseProxy.checked = useCorsProxy;
       proxySelectGroup.style.display = useCorsProxy ? 'flex' : 'none';
       saveSettings();
-      
+
       // Explicitly load with the forced user setting
       loadStream(currentStreamUrl, useCorsProxy);
     });
@@ -1162,12 +1152,12 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('iptv_channels');
         localStorage.removeItem('iptv_use_proxy');
         localStorage.removeItem('iptv_proxy_url');
-        
+
         // Reload states
         loadSettings();
         loadChannels();
         renderChannels();
-        
+
         modalSettings.style.display = 'none';
         if (channels.length > 0) selectChannel(channels[0].id);
       }
