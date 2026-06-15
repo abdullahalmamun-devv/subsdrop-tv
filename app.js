@@ -21,9 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
       proxyMode: 'smart' // Akamai HLS stream
     },
     {
-      id: 'stream-bd-vs-aus',
-      name: 'BD vs Aus',
-      url: 'https://premierleagpl23.akamaized.net/hls/live/2107108/Tapmad-P2s6L_EnG-FiN@L/level_0.m3u8',
+      id: 'stream-somoy-tv',
+      name: 'Somoy TV',
+      url: 'https://live.thebosstv.com:30443/dwlive/Somoy-TV/chunks.m3u8',
       category: 'HLS',
       logo: '',
       isCustom: false,
@@ -69,16 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isCustom: false,
       isFavorite: false,
       proxyMode: 'smart' // Only manifest proxied, video chunks direct
-    },
-    {
-      id: 'test-somoy-tv',
-      name: 'Somoy TV (Test)',
-      url: 'https://live.thebosstv.com:30443/dwlive/Somoy-TV/chunks.m3u8',
-      category: 'HLS',
-      logo: '',
-      isCustom: false,
-      isFavorite: false,
-      proxyMode: 'smart'
     }
   ];
 
