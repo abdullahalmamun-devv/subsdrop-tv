@@ -11,9 +11,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // 'all'   = Full proxy for CORS-restricted sources (server handles all traffic)
   const DEFAULT_CHANNELS = [
     {
+      id: 'colors-bangla-hd',
+      name: 'Colors Bangla HD',
+      url: 'https://d1g8wgjurz8via.cloudfront.net/bpk-tv/ColorsHD/default/ColorsHD.m3u8',
+      category: 'HLS',
+      logo: '',
+      isCustom: false,
+      isFavorite: false,
+      proxyMode: 'smart' // CloudFront HLS stream
+    },
+    {
       id: 'stream-toffee',
       name: 'Server 1',
-      url: 'https://toffee-seg.smartdev.workers.dev/manifest?url=https%3A%2F%2Fprod-cdn01-live.toffeelive.com%2Flive%2FFIFA-2026-4%2F0%2Fmaster_2000.m3u8&cookie=%22Expires%3D1781625001~_GO%3DGenerated~URLPrefix%3DaHR0cHM6Ly9wcm9kLWNkbjAxLWxpdmUudG9mZmVlbGl2ZS5jb20~Signature%3DAduQTZ8HHrEbwhqEyBUV9JtHhB0uUz4pyfx0ikBBw5Bc_qTMpecEHS4rRxTxyVh85QVHddbK8umToAoxjP1D3ygv2MgJ%22',
+      url: 'https://toffee-seg.smartdev.workers.dev/manifest?url=https%3A%2F%2Fprod-cdn01-live.toffeelive.com%2Flive%2FFIFA-2026%2F0%2Fmaster_2000.m3u8&cookie=%22Expires%3D1781636307~_GO%3DGenerated~URLPrefix%3DaHR0cHM6Ly9wcm9kLWNkbjAxLWxpdmUudG9mZmVlbGl2ZS5jb20~Signature%3DAduQTZ9t0mGjlXJ3dtEAGqYTyE5PW__m1jRmMyHRZM7Jv_TYwRT9Trid7Q05okywyNi9k2RuilUaXJdSY9TFLLUrD5EN%22',
       category: 'HLS',
       logo: '',
       isCustom: false,
@@ -69,6 +79,16 @@ document.addEventListener('DOMContentLoaded', () => {
       isCustom: false,
       isFavorite: false,
       proxyMode: 'smart' // Only manifest proxied, video chunks direct
+    },
+    {
+      id: 'stream-test',
+      name: 'Test Stream',
+      url: 'https://s3.us-east-2.amazonaws.com/cdnh111/hls/0/stream.m3u8',
+      category: 'HLS',
+      logo: '',
+      isCustom: false,
+      isFavorite: false,
+      proxyMode: 'smart' // CORS-friendly test stream
     }
   ];
 
