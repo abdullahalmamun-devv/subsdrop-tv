@@ -79,16 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isCustom: false,
       isFavorite: false,
       proxyMode: 'smart' // Only manifest proxied, video chunks direct
-    },
-    {
-      id: 'stream-32',
-      name: 'Server 5',
-      url: 'https://1nyaler.streamhostingcdn.top/stream/32/index.m3u8',
-      category: 'HLS',
-      logo: '',
-      isCustom: false,
-      isFavorite: false,
-      proxyMode: 'smart' // Only manifest proxied, video chunks direct
     }
   ];
 
