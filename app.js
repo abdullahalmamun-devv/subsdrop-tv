@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 'all'   = Full proxy for CORS-restricted sources (server handles all traffic)
   const DEFAULT_CHANNELS = [
     {
-      id: 'stream-akamai',
+      id: 'stream-toffee',
       name: 'Server 1',
-      url: 'https://premierleagpl23.akamaized.net/hls/live/2107108/tapmad-P2s6L_FiN@L-UrU/level_0.m3u8',
+      url: 'https://toffee-seg.smartdev.workers.dev/manifest?url=https%3A%2F%2Fprod-cdn01-live.toffeelive.com%2Flive%2FFIFA-2026-4%2F0%2Fmaster_2000.m3u8&cookie=%22Expires%3D1781625001~_GO%3DGenerated~URLPrefix%3DaHR0cHM6Ly9wcm9kLWNkbjAxLWxpdmUudG9mZmVlbGl2ZS5jb20~Signature%3DAduQTZ8HHrEbwhqEyBUV9JtHhB0uUz4pyfx0ikBBw5Bc_qTMpecEHS4rRxTxyVh85QVHddbK8umToAoxjP1D3ygv2MgJ%22',
       category: 'HLS',
       logo: '',
       isCustom: false,
