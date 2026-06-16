@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logo: '',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'smart' // Toffee stream already proxied via Cloudflare worker
+      proxyMode: 'none' // Toffee stream already proxied via Cloudflare worker
     }
   ];
   const CLOUDFLARE_PROXIES = [
@@ -396,7 +396,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const urlPath = rawUrl.toLowerCase().split('?')[0]; // Strip query string for extension check
-    let isMpegTs = urlPath.endsWith('.ts');
+    // Check if the base path ends with .ts, OR if the raw URL contains .ts (useful for proxy URLs like worker.dev/?url=...ts)
+    let isMpegTs = urlPath.endsWith('.ts') || rawUrl.toLowerCase().includes('.ts');
 
     let streamUrl = rawUrl;
     if (tryProxy) {
