@@ -53,8 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 'live-ts-stream',
       name: 'Server 2',
-      url: 'http://rgkkw.live:80/live/1Aoen7elp5/IgMJ60tmAa/130714.ts',
-      category: 'TS',
+      url: 'http://198.195.239.50:8095/tsports/index.m3u8',
+      category: 'HLS',
       logo: '',
       isCustom: false,
       isFavorite: false,
