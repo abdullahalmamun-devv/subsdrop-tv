@@ -41,14 +41,14 @@ document.addEventListener('DOMContentLoaded', () => {
       proxyMode: 'smart' // Akamai HLS stream
     },
     {
-      id: 'live-ts-stream',
-      name: 'Server 2',
-      url: 'http://198.195.239.50:8095/tsports/index.m3u8',
-      category: 'HLS',
-      logo: '',
+      id: 'fifa-ts-4k-1',
+      name: 'FIFA World Cup 4K 1',
+      url: 'http://starhub.pro/live/farhat-3379/67897-913379/745269.ts',
+      category: 'TS',
+      logo: 'https://i.ibb.co.com/nMBnLS9h/1000284536.png',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'all' // HTTP source — must fully proxy to avoid mixed content block on HTTPS live site
+      proxyMode: 'all'
     },
     {
       id: 'toffee-live-stream',
