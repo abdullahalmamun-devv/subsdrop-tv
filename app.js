@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logo: '',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'smart' // TS redirect chain requires full proxy
+      proxyMode: 'all' // HTTP source needs full proxy on HTTPS live server (mixed content)
     },
     {
       id: 'toffee-live-stream',
