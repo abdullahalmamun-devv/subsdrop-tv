@@ -34,11 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
       id: 'stream-tsports',
       name: 'Server 1',
       url: 'http://198.195.239.50:8095/tsports/index.m3u8',
-      category: 'HLS',
+      category: 'TS',
       logo: '',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'smart' // Akamai HLS stream
+      proxyMode: 'all'
     },
     {
       id: 'stream-somoy-tv',
