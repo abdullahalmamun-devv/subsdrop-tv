@@ -21,16 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
       proxyMode: 'smart' // CloudFront HLS stream
     },
     {
-      id: 'fifa-ts-2',
-      name: 'FIFA World Cup 4K',
-      url: 'http://starhub.pro/live/farhat-3379/67897-913379/742610.ts',
-      category: 'TS',
-      logo: 'https://i.ibb.co.com/nMBnLS9h/1000284536.png',
-      isCustom: false,
-      isFavorite: false,
-      proxyMode: 'all'
-    },
-    {
       id: 'stream-tsports',
       name: 'Server 1',
       url: 'https://1nyaler.streamhostingcdn.top/stream/23/index.m3u8',
