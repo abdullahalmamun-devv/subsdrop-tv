@@ -13,6 +13,16 @@ const keepAliveAgentHttps = new https.Agent({ keepAlive: true, maxSockets: 150, 
 const manifestCache = new Map();
 const CACHE_TTL_MS = 1500; // 1.5 seconds TTL (suitable for live HLS streams)
 
+// Periodic cleanup of expired manifest cache entries to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of manifestCache) {
+    if (now - val.timestamp > CACHE_TTL_MS * 4) {
+      manifestCache.delete(key);
+    }
+  }
+}, 10000);
+
 const app = express();
 const PORT = process.env.PORT || 8000;
 
@@ -251,10 +261,8 @@ app.get('/proxy', (req, res) => {
               '-b:a', '128k',           // 128kbps audio bitrate
               '-ac', '2',               // Stereo output
               '-f', 'mpegts',           // Output format: MPEG-TS
-              '-movflags', '+faststart',
               '-fflags', '+genpts+discardcorrupt',
               '-err_detect', 'ignore_err',
-              '-reconnect', '1',
               '-loglevel', 'error',
               'pipe:1'                  // Write to stdout
             ], { stdio: ['pipe', 'pipe', 'pipe'] });
@@ -277,6 +285,11 @@ app.get('/proxy', (req, res) => {
             ffmpeg.on('error', (err) => {
               console.error('[FFmpeg proxy] Process error:', err.message);
               if (!res.destroyed) res.destroy();
+            });
+
+            // Clean up upstream connection when FFmpeg exits
+            ffmpeg.on('close', () => {
+              if (!proxyRes.destroyed) proxyRes.destroy();
             });
 
             ffmpeg.stdin.on('error', () => {}); // Suppress EPIPE on early disconnect
@@ -369,6 +382,7 @@ function handleMulticastTsStream(req, res, targetUrl) {
     
     // Listen to data events and write directly to each client to avoid backpressure block
     mux.stream.on('data', (chunk) => {
+      if (mux.stream.destroyed) return; // Guard against write-after-destroy
       mux.clients.forEach(client => {
         if (client.writable && !client.destroyed) {
           // If a client lags behind by more than 15MB (approx 1 minute of lag), disconnect them to protect RAM
@@ -448,7 +462,7 @@ function startUpstreamTsStream(url, mux, originalReq) {
         if (mux.upstreamReq) {
           try { mux.upstreamReq.destroy(); } catch (e) {}
         }
-        startUpstreamTsStream(redirectUrl, mux);
+        startUpstreamTsStream(redirectUrl, mux, originalReq);
         return;
       }
 
@@ -468,7 +482,6 @@ function startUpstreamTsStream(url, mux, originalReq) {
         '-f', 'mpegts',
         '-fflags', '+genpts+discardcorrupt',
         '-err_detect', 'ignore_err',
-        '-reconnect', '1',
         '-loglevel', 'error',
         'pipe:1'
       ], { stdio: ['pipe', 'pipe', 'pipe'] });
@@ -486,6 +499,11 @@ function startUpstreamTsStream(url, mux, originalReq) {
 
       ffmpeg.on('error', (err) => {
         console.error(`[FFmpeg Mux Error: ${url}]`, err.message);
+      });
+
+      // Clean up upstream connection when FFmpeg exits
+      ffmpeg.on('close', () => {
+        if (proxyRes && !proxyRes.destroyed) proxyRes.destroy();
       });
 
       ffmpeg.stdin.on('error', () => {}); // Suppress EPIPE

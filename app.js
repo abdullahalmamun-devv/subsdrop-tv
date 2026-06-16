@@ -435,7 +435,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    let isMpegTs = rawUrl.toLowerCase().includes('.ts') || (!rawUrl.toLowerCase().includes('.m3u8') && !rawUrl.toLowerCase().includes('.mp4'));
+    const urlPath = rawUrl.toLowerCase().split('?')[0]; // Strip query string for extension check
+    let isMpegTs = urlPath.endsWith('.ts');
 
     let streamUrl = rawUrl;
     if (tryProxy) {
@@ -445,16 +446,17 @@ document.addEventListener('DOMContentLoaded', () => {
         activeProxy = CLOUDFLARE_PROXIES[Math.floor(Math.random() * CLOUDFLARE_PROXIES.length)];
       }
 
-      // If it's an MPEG-TS stream, we MUST use the local proxy for FFmpeg audio transcoding.
-      // Cloudflare Worker cannot do audio conversion.
-      if (isMpegTs && activeProxy.includes('workers.dev')) {
+      // Smart proxy mode and MPEG-TS streams MUST use the local server proxy.
+      // - Smart mode requires server-side manifest rewriting (CF Worker can't do this)
+      // - MPEG-TS streams need FFmpeg audio transcoding (CF Worker can't do this)
+      if (smartProxy || (isMpegTs && activeProxy.includes('workers.dev'))) {
         streamUrl = window.location.origin + '/proxy?url=' + encodeURIComponent(rawUrl);
+        if (smartProxy) streamUrl += '&smart=true';
       } else {
         streamUrl = activeProxy + encodeURIComponent(rawUrl);
       }
 
       if (smartProxy) {
-        streamUrl += '&smart=true';
         headerChannelStatus.innerHTML = `<i data-lucide="radio" class="inline-icon"></i> Connecting (Smart Proxy)...`;
       } else {
         headerChannelStatus.innerHTML = `<i data-lucide="radio" class="inline-icon"></i> Connecting (Proxy)...`;
@@ -480,7 +482,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Set ambient glow gradient
     const color = getGlowColor(headerChannelName.textContent);
-    ambientGlow.style.background = `radial-gradient(circle, ${color.split('(')[2].split(')')[0]} 0%, transparent 70%)`;
+    const hslMatch = color.match(/hsl\([^)]+\)/);
+    const glowColor = hslMatch ? hslMatch[0] : 'hsl(220, 70%, 50%)';
+    ambientGlow.style.background = `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`;
   }
 
   function handlePlaybackFailure(reason) {
@@ -703,9 +707,11 @@ document.addEventListener('DOMContentLoaded', () => {
       hlsInstance = null;
     }
     if (mpegtsPlayer) {
-      mpegtsPlayer.unload();
-      mpegtsPlayer.detachMediaElement();
-      mpegtsPlayer.destroy();
+      try {
+        mpegtsPlayer.unload();
+        mpegtsPlayer.detachMediaElement();
+        mpegtsPlayer.destroy();
+      } catch (e) { }
       mpegtsPlayer = null;
     }
     video.removeAttribute('src');
@@ -784,6 +790,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     }
+  }
+
+  function saveChannels() {
+    // Channels are loaded fresh from defaults each page load; persistence reserved for future
   }
 
   // --- Favorite Toggle ---
