@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logo: 'https://i.ibb.co.com/nMBnLS9h/1000284536.png',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'smart'
+      proxyMode: 'all'
     },
     {
       id: 'stream-toffee',
