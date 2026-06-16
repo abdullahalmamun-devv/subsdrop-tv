@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logo: '',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'smart' // HTTP source — may have mixed content issues on HTTPS live site
+      proxyMode: 'all' // HTTP source — must fully proxy to avoid mixed content block on HTTPS live site
     },
     {
       id: 'toffee-live-stream',
@@ -437,8 +437,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // MPEG-TS streams MUST use local server proxy for FFmpeg audio transcoding
-      // All other streams use CF Worker proxy (fast, distributed)
-      if (isMpegTs && activeProxy.includes('workers.dev')) {
+      // HTTP HLS with proxyMode 'all' MUST use local server proxy for manifest rewriting
+      // (CF Workers can't rewrite m3u8 to proxy .ts chunk URLs, causing mixed content on HTTPS)
+      const isHttpSource = rawUrl.startsWith('http://');
+      const needsLocalProxy = isMpegTs || (isHttpSource && !smartProxy);
+      if (needsLocalProxy && activeProxy.includes('workers.dev')) {
         streamUrl = window.location.origin + '/proxy?url=' + encodeURIComponent(rawUrl);
       } else {
         streamUrl = activeProxy + encodeURIComponent(rawUrl);
