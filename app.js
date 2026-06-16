@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 'stream-tsports',
       name: 'Server 1',
-      url: 'http://198.195.239.50:8095/tsports/index.m3u8',
+      url: 'http://starhub.pro/live/farhat-3379/67897-913379/130714.ts',
       category: 'TS',
       logo: '',
       isCustom: false,
