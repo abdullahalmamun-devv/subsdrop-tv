@@ -21,16 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
       proxyMode: 'smart' // CloudFront HLS stream
     },
     {
-      id: 'stream-tsports',
-      name: 'Server 1',
-      url: 'https://1nyaler.streamhostingcdn.top/stream/23/index.m3u8',
-      category: 'HLS',
-      logo: '',
-      isCustom: false,
-      isFavorite: false,
-      proxyMode: 'smart' // HTTPS HLS stream — same URL as Server 4
-    },
-    {
       id: 'stream-somoy-tv',
       name: 'Somoy TV',
       url: 'https://live.thebosstv.com:30443/dwlive/Somoy-TV/chunks.m3u8',
@@ -41,34 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
       proxyMode: 'smart' // Akamai HLS stream
     },
     {
-      id: 'fifa-ts-4k-1',
-      name: 'FIFA World Cup 4K 1',
-      url: 'http://starhub.pro/live/farhat-3379/67897-913379/745269.ts',
-      category: 'TS',
-      logo: 'https://i.ibb.co.com/nMBnLS9h/1000284536.png',
-      isCustom: false,
-      isFavorite: false,
-      proxyMode: 'none'
-    },
-    {
       id: 'toffee-live-stream',
-      name: 'Server 3',
-      url: 'https://s3.us-east-2.amazonaws.com/cdnh111/hls/0/stream.m3u8',
+      name: 'Toffee',
+      url: 'https://toffee-seg.smartdev.workers.dev/seg?url=https%3A%2F%2Fprod-cdn01-live.toffeelive.com%2Flive%2FFIFA-2026%2F0%2Fmaster_200020260616030043920.ts&cookie=%22Expires%3D1781636307~_GO%3DGenerated~URLPrefix%3DaHR0cHM6Ly9wcm9kLWNkbjAxLWxpdmUudG9mZmVlbGl2ZS5jb20~Signature%3DAduQTZ9t0mGjlXJ3dtEAGqYTyE5PW__m1jRmMyHRZM7Jv_TYwRT9Trid7Q05okywyNi9k2RuilUaXJdSY9TFLLUrD5EN%22',
       category: 'HLS',
       logo: '',
       isCustom: false,
       isFavorite: false,
       proxyMode: 'smart' // Toffee stream already proxied via Cloudflare worker
-    },
-    {
-      id: 'stream-23',
-      name: 'Server 4',
-      url: 'https://1nyaler.streamhostingcdn.top/stream/23/index.m3u8',
-      category: 'HLS',
-      logo: '',
-      isCustom: false,
-      isFavorite: false,
-      proxyMode: 'smart' // Only manifest proxied, video chunks direct
     }
   ];
   const CLOUDFLARE_PROXIES = [
