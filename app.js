@@ -34,11 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
       id: 'stream-tsports',
       name: 'Server 1',
       url: 'https://1nyaler.streamhostingcdn.top/stream/23/index.m3u8',
-      category: 'TS',
+      category: 'HLS',
       logo: '',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'all'
+      proxyMode: 'smart' // HTTPS HLS stream — same URL as Server 4
     },
     {
       id: 'stream-somoy-tv',
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logo: '',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'all' // HTTP source needs full proxy on HTTPS live server (mixed content)
+      proxyMode: 'smart' // HTTP source — may have mixed content issues on HTTPS live site
     },
     {
       id: 'toffee-live-stream',
@@ -416,7 +416,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 'all'   = full proxy (all traffic through server)
     let tryProxy = false;
     let smartProxy = false;
-    let fullProxy = false; // 'all' mode — must use local server for manifest URL rewriting
 
     if (forceProxy !== null) {
       tryProxy = forceProxy;
@@ -432,7 +431,6 @@ document.addEventListener('DOMContentLoaded', () => {
       } else { // 'all'
         tryProxy = true;
         smartProxy = false;
-        fullProxy = true; // Force local server proxy for full manifest+chunk rewriting
         retryWithProxyActive = true;
       }
     }
@@ -448,11 +446,9 @@ document.addEventListener('DOMContentLoaded', () => {
         activeProxy = CLOUDFLARE_PROXIES[Math.floor(Math.random() * CLOUDFLARE_PROXIES.length)];
       }
 
-      // Routes that MUST use the local server proxy (not CF Worker):
-      // - Full proxy ('all'): requires manifest URL rewriting so chunks also go through proxy
-      // - MPEG-TS via CF Worker: needs FFmpeg audio transcoding
-      // Note: Smart mode works fine through CF Worker (HTTPS sources have absolute URLs)
-      if (fullProxy || (isMpegTs && activeProxy.includes('workers.dev'))) {
+      // MPEG-TS streams MUST use local server proxy for FFmpeg audio transcoding
+      // All other streams use CF Worker proxy (fast, distributed)
+      if (isMpegTs && activeProxy.includes('workers.dev')) {
         streamUrl = window.location.origin + '/proxy?url=' + encodeURIComponent(rawUrl);
       } else {
         streamUrl = activeProxy + encodeURIComponent(rawUrl);
