@@ -449,17 +449,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Routes that MUST use the local server proxy (not CF Worker):
-      // - Smart mode: requires server-side manifest rewriting
       // - Full proxy ('all'): requires manifest URL rewriting so chunks also go through proxy
       // - MPEG-TS via CF Worker: needs FFmpeg audio transcoding
-      if (smartProxy || fullProxy || (isMpegTs && activeProxy.includes('workers.dev'))) {
+      // Note: Smart mode works fine through CF Worker (HTTPS sources have absolute URLs)
+      if (fullProxy || (isMpegTs && activeProxy.includes('workers.dev'))) {
         streamUrl = window.location.origin + '/proxy?url=' + encodeURIComponent(rawUrl);
-        if (smartProxy) streamUrl += '&smart=true';
       } else {
         streamUrl = activeProxy + encodeURIComponent(rawUrl);
       }
 
       if (smartProxy) {
+        streamUrl += '&smart=true';
         headerChannelStatus.innerHTML = `<i data-lucide="radio" class="inline-icon"></i> Connecting (Smart Proxy)...`;
       } else {
         headerChannelStatus.innerHTML = `<i data-lucide="radio" class="inline-icon"></i> Connecting (Proxy)...`;
