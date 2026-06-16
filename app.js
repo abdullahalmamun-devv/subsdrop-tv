@@ -416,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 'all'   = full proxy (all traffic through server)
     let tryProxy = false;
     let smartProxy = false;
+    let fullProxy = false; // 'all' mode — must use local server for manifest URL rewriting
 
     if (forceProxy !== null) {
       tryProxy = forceProxy;
@@ -431,6 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else { // 'all'
         tryProxy = true;
         smartProxy = false;
+        fullProxy = true; // Force local server proxy for full manifest+chunk rewriting
         retryWithProxyActive = true;
       }
     }
@@ -446,10 +448,11 @@ document.addEventListener('DOMContentLoaded', () => {
         activeProxy = CLOUDFLARE_PROXIES[Math.floor(Math.random() * CLOUDFLARE_PROXIES.length)];
       }
 
-      // Smart proxy mode and MPEG-TS streams MUST use the local server proxy.
-      // - Smart mode requires server-side manifest rewriting (CF Worker can't do this)
-      // - MPEG-TS streams need FFmpeg audio transcoding (CF Worker can't do this)
-      if (smartProxy || (isMpegTs && activeProxy.includes('workers.dev'))) {
+      // Routes that MUST use the local server proxy (not CF Worker):
+      // - Smart mode: requires server-side manifest rewriting
+      // - Full proxy ('all'): requires manifest URL rewriting so chunks also go through proxy
+      // - MPEG-TS via CF Worker: needs FFmpeg audio transcoding
+      if (smartProxy || fullProxy || (isMpegTs && activeProxy.includes('workers.dev'))) {
         streamUrl = window.location.origin + '/proxy?url=' + encodeURIComponent(rawUrl);
         if (smartProxy) streamUrl += '&smart=true';
       } else {
