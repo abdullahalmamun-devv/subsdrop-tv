@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logo: 'https://i.ibb.co.com/nMBnLS9h/1000284536.png',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'all'
+      proxyMode: 'smart'
     },
     {
       id: 'stream-toffee',
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logo: '',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'all' // TS redirect chain requires full proxy
+      proxyMode: 'smart' // TS redirect chain requires full proxy
     },
     {
       id: 'toffee-live-stream',
@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         streamUrl = activeProxy + encodeURIComponent(rawUrl);
       }
-      
+
       if (smartProxy) {
         streamUrl += '&smart=true';
         headerChannelStatus.innerHTML = `<i data-lucide="radio" class="inline-icon"></i> Connecting (Smart Proxy)...`;

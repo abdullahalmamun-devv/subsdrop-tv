@@ -75,9 +75,9 @@ app.get('/proxy', (req, res) => {
     return res.status(400).send('Missing "url" parameter');
   }
 
-  // Multicast stream sharing ONLY for the Live TS stream URL
-  const isLiveTsChannel = targetUrl.toLowerCase().includes('130714.ts');
-  if (isLiveTsChannel) {
+  // All .ts streams use the dynamic Multicast/Restreaming proxy
+  const isTsStream = targetUrl.toLowerCase().includes('.ts');
+  if (isTsStream) {
     return handleMulticastTsStream(req, res, targetUrl);
   }
 
@@ -309,18 +309,21 @@ app.get('/proxy', (req, res) => {
   makeRequest(targetUrl);
 });
 
-// Global state for multicast TS stream sharing
-let activeTsStream = null;
-let activeTsClients = [];
-let upstreamRequest = null;
+// Dynamic state for multicast TS stream sharing
+// Map key: targetUrl, Value: { stream: PassThrough, clients: Array, upstreamReq: ClientRequest, ffmpegProcess: ChildProcess, cleanupTimeout: NodeJS.Timeout }
+const activeMultiplexers = new Map();
 
 // Global state for SSE traffic tracking
 let sseClients = [];
 
 function broadcastStats() {
+  let totalTsClients = 0;
+  for (const mux of activeMultiplexers.values()) {
+    totalTsClients += mux.clients.length;
+  }
   const stats = {
     viewers: sseClients.length,
-    activeTsStreams: activeTsClients.length
+    activeTsStreams: totalTsClients
   };
   const data = `data: ${JSON.stringify(stats)}\n\n`;
   sseClients.forEach(client => {
@@ -351,18 +354,26 @@ function handleMulticastTsStream(req, res, targetUrl) {
     'X-Content-Type-Options': 'nosniff'
   });
 
-  if (!activeTsStream) {
-    activeTsClients = [];
-    // 15MB buffer limit allows users to lag behind by up to ~1 minute on slow connections without getting kicked out
-    activeTsStream = new PassThrough({ highWaterMark: 15 * 1024 * 1024 });
+  let mux = activeMultiplexers.get(targetUrl);
+
+  if (!mux) {
+    console.log(`[Multiplexer] Initializing new stream for ${targetUrl}`);
+    mux = {
+      stream: new PassThrough({ highWaterMark: 15 * 1024 * 1024 }),
+      clients: [],
+      upstreamReq: null,
+      ffmpegProcess: null,
+      cleanupTimeout: null
+    };
+    activeMultiplexers.set(targetUrl, mux);
     
     // Listen to data events and write directly to each client to avoid backpressure block
-    activeTsStream.on('data', (chunk) => {
-      activeTsClients.forEach(client => {
+    mux.stream.on('data', (chunk) => {
+      mux.clients.forEach(client => {
         if (client.writable && !client.destroyed) {
           // If a client lags behind by more than 15MB (approx 1 minute of lag), disconnect them to protect RAM
           if (client.writableLength > 15 * 1024 * 1024) {
-            console.warn('Client too slow, disconnecting to preserve server memory');
+            console.warn(`[Multiplexer] Client too slow, dropping from ${targetUrl}`);
             client.destroy();
           } else {
             client.write(chunk);
@@ -371,49 +382,55 @@ function handleMulticastTsStream(req, res, targetUrl) {
       });
     });
 
-    startUpstreamTsStream(targetUrl);
+    startUpstreamTsStream(targetUrl, mux);
+  } else {
+    // If a cleanup was scheduled because clients hit 0, cancel it since someone reconnected!
+    if (mux.cleanupTimeout) {
+      clearTimeout(mux.cleanupTimeout);
+      mux.cleanupTimeout = null;
+      console.log(`[Multiplexer] Client reconnected to ${targetUrl}. Cancelled shutdown.`);
+    }
   }
 
-  activeTsClients.push(res);
+  mux.clients.push(res);
   broadcastStats();
 
   // Clean up when a client leaves
   req.on('close', () => {
-    activeTsClients = activeTsClients.filter(c => c !== res);
+    mux.clients = mux.clients.filter(c => c !== res);
     broadcastStats();
-    if (activeTsClients.length === 0) {
-      cleanupUpstreamTsStream();
+    if (mux.clients.length === 0) {
+      // Delay cleanup by 10 seconds in case a user is just refreshing the page
+      console.log(`[Multiplexer] 0 clients for ${targetUrl}. Scheduling shutdown in 10s.`);
+      mux.cleanupTimeout = setTimeout(() => {
+        cleanupUpstreamTsStream(targetUrl, mux);
+      }, 10000);
     }
   });
 }
 
-// Global reference to the FFmpeg transcoder process for multicast streams
-let activeFfmpegProcess = null;
-
-function startUpstreamTsStream(url) {
+function startUpstreamTsStream(url, mux) {
   try {
     const currentParsed = new URL(url);
     const isHttps = currentParsed.protocol === 'https:';
     const clientModule = isHttps ? https : http;
-
-    const forwardHeaders = {
-      'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
-      'Accept': '*/*',
-      'Connection': 'keep-alive'
-    };
 
     const proxyOptions = {
       hostname: currentParsed.hostname,
       port: currentParsed.port || (isHttps ? 443 : 80),
       path: currentParsed.pathname + currentParsed.search,
       method: 'GET',
-      headers: forwardHeaders,
+      headers: {
+        'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+        'Accept': '*/*',
+        'Connection': 'keep-alive'
+      },
       timeout: 15000,
       agent: isHttps ? keepAliveAgentHttps : keepAliveAgentHttp
     };
 
-    upstreamRequest = clientModule.request(proxyOptions, (proxyRes) => {
-      upstreamRequest.setTimeout(0);
+    mux.upstreamReq = clientModule.request(proxyOptions, (proxyRes) => {
+      mux.upstreamReq.setTimeout(0);
       const statusCode = proxyRes.statusCode;
 
       if ([301, 302, 303, 307, 308].includes(statusCode) && proxyRes.headers.location) {
@@ -421,16 +438,16 @@ function startUpstreamTsStream(url) {
         if (!redirectUrl.startsWith('http')) {
           redirectUrl = new URL(redirectUrl, url).href;
         }
-        if (upstreamRequest) {
-          try { upstreamRequest.destroy(); } catch (e) {}
+        if (mux.upstreamReq) {
+          try { mux.upstreamReq.destroy(); } catch (e) {}
         }
-        startUpstreamTsStream(redirectUrl);
+        startUpstreamTsStream(redirectUrl, mux);
         return;
       }
 
       if (statusCode !== 200) {
-        broadcastError("Failed to fetch stream from source.");
-        cleanupUpstreamTsStream();
+        broadcastError(mux, "Failed to fetch stream from source.");
+        cleanupUpstreamTsStream(url, mux);
         return;
       }
 
@@ -449,44 +466,44 @@ function startUpstreamTsStream(url) {
         'pipe:1'
       ], { stdio: ['pipe', 'pipe', 'pipe'] });
 
-      activeFfmpegProcess = ffmpeg;
+      mux.ffmpegProcess = ffmpeg;
 
       // Pipe: upstream → FFmpeg stdin, FFmpeg stdout → multicast PassThrough
       proxyRes.pipe(ffmpeg.stdin);
-      ffmpeg.stdout.pipe(activeTsStream, { end: false });
+      ffmpeg.stdout.pipe(mux.stream, { end: false });
 
       ffmpeg.stderr.on('data', (data) => {
         const msg = data.toString().trim();
-        if (msg) console.warn('[FFmpeg multicast]', msg);
+        if (msg) console.warn(`[FFmpeg Mux: ${url.substring(0,30)}...]`, msg);
       });
 
       ffmpeg.on('error', (err) => {
-        console.error('[FFmpeg multicast] Process error:', err.message);
+        console.error(`[FFmpeg Mux Error: ${url}]`, err.message);
       });
 
       ffmpeg.stdin.on('error', () => {}); // Suppress EPIPE
       ffmpeg.stdout.on('error', () => {}); // Suppress EPIPE
     });
 
-    upstreamRequest.on('timeout', () => {
-      broadcastError("Source stream connection timed out.");
-      cleanupUpstreamTsStream();
+    mux.upstreamReq.on('timeout', () => {
+      broadcastError(mux, "Source stream connection timed out.");
+      cleanupUpstreamTsStream(url, mux);
     });
 
-    upstreamRequest.on('error', (err) => {
-      broadcastError(`Source stream connection error: ${err.message}`);
-      cleanupUpstreamTsStream();
+    mux.upstreamReq.on('error', (err) => {
+      broadcastError(mux, `Source stream error: ${err.message}`);
+      cleanupUpstreamTsStream(url, mux);
     });
 
-    upstreamRequest.end();
+    mux.upstreamReq.end();
   } catch (e) {
-    broadcastError("Failed to initiate source stream connection.");
-    cleanupUpstreamTsStream();
+    broadcastError(mux, "Failed to initiate source stream connection.");
+    cleanupUpstreamTsStream(url, mux);
   }
 }
 
-function broadcastError(msg) {
-  activeTsClients.forEach(client => {
+function broadcastError(mux, msg) {
+  mux.clients.forEach(client => {
     if (client.writable && !client.destroyed) {
       try {
         client.write(Buffer.from(msg, 'utf8'));
@@ -495,21 +512,27 @@ function broadcastError(msg) {
   });
 }
 
-function cleanupUpstreamTsStream() {
-  if (activeFfmpegProcess) {
-    try { activeFfmpegProcess.stdin.destroy(); } catch (e) {}
-    try { activeFfmpegProcess.kill('SIGTERM'); } catch (e) {}
-    activeFfmpegProcess = null;
+function cleanupUpstreamTsStream(url, mux) {
+  console.log(`[Multiplexer] Shutting down ${url}`);
+  if (mux.cleanupTimeout) clearTimeout(mux.cleanupTimeout);
+  
+  if (mux.ffmpegProcess) {
+    try { mux.ffmpegProcess.stdin.destroy(); } catch (e) {}
+    try { mux.ffmpegProcess.kill('SIGTERM'); } catch (e) {}
+    mux.ffmpegProcess = null;
   }
-  if (upstreamRequest) {
-    try { upstreamRequest.destroy(); } catch (e) {}
-    upstreamRequest = null;
+  if (mux.upstreamReq) {
+    try { mux.upstreamReq.destroy(); } catch (e) {}
+    mux.upstreamReq = null;
   }
-  if (activeTsStream) {
-    try { activeTsStream.destroy(); } catch (e) {}
-    activeTsStream = null;
+  if (mux.stream) {
+    try { mux.stream.destroy(); } catch (e) {}
+    mux.stream = null;
   }
-  activeTsClients = [];
+  
+  mux.clients = [];
+  activeMultiplexers.delete(url);
+  broadcastStats();
 }
 
 // Fallback for non-existent client-side paths
