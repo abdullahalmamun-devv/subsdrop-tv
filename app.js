@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 'stream-tsports',
       name: 'Server 1',
-      url: 'http://starhub.pro/live/farhat-3379/67897-913379/130714.ts',
+      url: 'https://1nyaler.streamhostingcdn.top/stream/23/index.m3u8',
       category: 'TS',
       logo: '',
       isCustom: false,
