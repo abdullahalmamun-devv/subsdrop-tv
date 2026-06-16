@@ -84,7 +84,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const CLOUDFLARE_PROXIES = [
     'https://subsdrop-proxy.alm40533.workers.dev/?url=',
     'https://subsdrop-proxy2.softpremium13.workers.dev/?url=',
-    'https://subsdrop-proxy3.jihadabal122.workers.dev/?url='
+    'https://subsdrop-proxy3.jihadabal122.workers.dev/?url=',
+    'https://bitter-lake-b42b.softpremiumbd4.workers.dev/?url=',
+    'https://subsdrop-proxy5.softpremium0.workers.dev/?url=',
+    'https://subsdrop-proxy6.softpremiumbd1.workers.dev/?url=',
+    'https://subsdrop-proxy7.flexsubsbd.workers.dev/?url=',
+    'https://subsdrop-proxy8.znznxxnpwkwsk.workers.dev/?url=',
+    'https://subsdrop-proxy9.easminjannat6.workers.dev/?url=',
+    'https://subsdrop-proxy9.zihad70888.workers.dev/?url=',
+    'https://subsdrop-proxy10.nottyboy510.workers.dev/?url=',
+    'https://subsdrop-proxy11.humayraakterjoly.workers.dev/?url=',
+    'https://subsdrop-proxy12.al-mamun-16479.workers.dev/?url=',
+    'https://subsdrop-proxy13.askfordeenbd.workers.dev/?url=',
+    'https://subsdrop-proxy14.khansforfb.workers.dev/?url=',
+    'https://subsdrop-proxy15.mamunayan07.workers.dev/?url=',
+    'https://subsdrop-proxy16.fahmidulayan.workers.dev/?url=',
+    'https://subsdrop-proxy17.mahi696907.workers.dev/?url=',
+    'https://subsdrop-proxy18.protrainerit.workers.dev/?url=',
+    'https://subsdrop-proxy19.kumarikul680.workers.dev/?url=',
+    'https://subsdrop-proxy20.subsdropbd.workers.dev/?url='
   ];
   const DEFAULT_CORS_PROXY = 'cloudflare_balancer';
   // --- App State ---
