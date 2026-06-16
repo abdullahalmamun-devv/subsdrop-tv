@@ -382,7 +382,7 @@ function handleMulticastTsStream(req, res, targetUrl) {
       });
     });
 
-    startUpstreamTsStream(targetUrl, mux);
+    startUpstreamTsStream(targetUrl, mux, req);
   } else {
     // If a cleanup was scheduled because clients hit 0, cancel it since someone reconnected!
     if (mux.cleanupTimeout) {
@@ -409,22 +409,29 @@ function handleMulticastTsStream(req, res, targetUrl) {
   });
 }
 
-function startUpstreamTsStream(url, mux) {
+function startUpstreamTsStream(url, mux, originalReq) {
   try {
     const currentParsed = new URL(url);
     const isHttps = currentParsed.protocol === 'https:';
     const clientModule = isHttps ? https : http;
+
+    let originalOrigin = '';
+    try { originalOrigin = new URL(url).origin; } catch(e){}
+
+    const forwardHeaders = {
+      'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+      'Accept': '*/*',
+      'Connection': 'keep-alive'
+    };
+    if (originalReq && originalReq.headers['range']) forwardHeaders['Range'] = originalReq.headers['range'];
+    if (originalOrigin) forwardHeaders['Referer'] = originalOrigin + '/';
 
     const proxyOptions = {
       hostname: currentParsed.hostname,
       port: currentParsed.port || (isHttps ? 443 : 80),
       path: currentParsed.pathname + currentParsed.search,
       method: 'GET',
-      headers: {
-        'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
-        'Accept': '*/*',
-        'Connection': 'keep-alive'
-      },
+      headers: forwardHeaders,
       timeout: 15000,
       agent: isHttps ? keepAliveAgentHttps : keepAliveAgentHttp
     };
