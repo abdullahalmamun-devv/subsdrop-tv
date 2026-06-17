@@ -31,14 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
       proxyMode: 'smart' // Akamai HLS stream
     },
     {
-      id: 'toffee-live-stream',
-      name: 'Toffee',
-      url: 'https://toffee-seg.smartdev.workers.dev/seg?url=https%3A%2F%2Fprod-cdn01-live.toffeelive.com%2Flive%2FFIFA-2026%2F0%2Fmaster_200020260616030043920.ts&cookie=%22Expires%3D1781636307~_GO%3DGenerated~URLPrefix%3DaHR0cHM6Ly9wcm9kLWNkbjAxLWxpdmUudG9mZmVlbGl2ZS5jb20~Signature%3DAduQTZ9t0mGjlXJ3dtEAGqYTyE5PW__m1jRmMyHRZM7Jv_TYwRT9Trid7Q05okywyNi9k2RuilUaXJdSY9TFLLUrD5EN%22',
+      id: 'hindi-ngchd',
+      name: 'Hindi',
+      url: 'https://d1g8wgjurz8via.cloudfront.net/bpk-tv/NGCHD/default/NGCHD.m3u8',
       category: 'HLS',
       logo: '',
       isCustom: false,
       isFavorite: false,
-      proxyMode: 'none' // Toffee stream already proxied via Cloudflare worker
+      proxyMode: 'smart' // CloudFront HLS stream
     }
   ];
   const CLOUDFLARE_PROXIES = [
@@ -925,8 +925,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (fullscreenBtn) {
       if (document.fullscreenElement) {
         fullscreenBtn.innerHTML = `<i data-lucide="minimize" id="ctrl-fullscreen-icon"></i>`;
+        // Lock screen orientation to landscape on supported devices (mobile)
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock('landscape').catch(err => {
+            console.warn('Orientation lock not supported or failed:', err);
+          });
+        }
       } else {
         fullscreenBtn.innerHTML = `<i data-lucide="maximize" id="ctrl-fullscreen-icon"></i>`;
+        // Unlock screen orientation
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
       }
       if (window.lucide) window.lucide.createIcons();
     }
@@ -1174,6 +1184,19 @@ document.addEventListener('DOMContentLoaded', () => {
         modalSettings.style.display = 'none';
         if (channels.length > 0) selectChannel(channels[0].id);
       }
+    });
+  }
+
+  // Register Service Worker for PWA
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        })
+        .catch(err => {
+          console.log('ServiceWorker registration failed: ', err);
+        });
     });
   }
 
